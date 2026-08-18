@@ -1,0 +1,16 @@
+{
+  "name": "carretera-austral",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Estado de la Carretera Austral — clima, avisos oficiales y reportes de viajeros",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
