@@ -1,0 +1,1878 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estado de la Carretera Austral Hoy | Clima, Cortes y Cadenas en Vivo</title>
+<meta name="description" content="Estado actual de la Carretera Austral (Ruta 7) entre Puerto Montt y Villa O'Higgins: mapa con el estado del camino, clima en tiempo real y pronóstico de 7 días, avisos oficiales de cortes y cadenas obligatorias, y reportes de viajeros por tramo.">
+<meta name="keywords" content="carretera austral, estado de la carretera austral, estado carretera austral hoy, ruta 7 chile, clima carretera austral, cadenas obligatorias aysen, corte de ruta carretera austral, estado ruta 7, camino puerto montt villa o'higgins">
+<meta name="robots" content="index, follow">
+<meta name="author" content="Comunidad Carretera Austral">
+<!-- Update to the real published URL once this is deployed on a domain -->
+<link rel="canonical" href="https://carretera-austral.example.com/">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Estado de la Carretera Austral Hoy | Clima, Cortes y Cadenas en Vivo">
+<meta property="og:description" content="Mapa en vivo del estado de la Ruta 7: clima, pronóstico, avisos oficiales de Vialidad/Carabineros y reportes de viajeros, tramo por tramo entre Puerto Montt y Villa O'Higgins.">
+<meta property="og:locale" content="es_CL">
+<meta property="og:url" content="https://carretera-austral.example.com/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Estado de la Carretera Austral Hoy">
+<meta name="twitter:description" content="Clima en vivo, avisos oficiales y reportes de viajeros para toda la Ruta 7, de Puerto Montt a Villa O'Higgins.">
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230E1B1F'/%3E%3Cpath d='M14 46 Q22 18 32 30 Q42 42 50 14' stroke='%234C93A2' stroke-width='5' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='14' cy='46' r='4' fill='%237FA65C'/%3E%3Ccircle cx='50' cy='14' r='4' fill='%23C4502E'/%3E%3C/svg%3E">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Estado de la Carretera Austral",
+  "alternateName": "Carretera Austral en vivo",
+  "description": "Mapa y estado en vivo de la Carretera Austral (Ruta 7): clima, pronóstico, avisos oficiales de cortes y cadenas obligatorias, y reportes de viajeros entre Puerto Montt y Villa O'Higgins.",
+  "inLanguage": "es-CL",
+  "url": "https://carretera-austral.example.com/",
+  "about": {
+    "@type": "Place",
+    "name": "Carretera Austral",
+    "alternateName": "Ruta 7, Chile",
+    "containedInPlace": { "@type": "AdministrativeArea", "name": "Los Lagos, Aysén" }
+  }
+}
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root{
+    --ink-950:#0E1B1F;
+    --ink-900:#122024;
+    --ink-850:#16272B;
+    --ink-750:#1E3237;
+    --line-300:#3C565C;
+    --line-200:#2A3F44;
+    --mist-100:#E9EFED;
+    --mist-300:#A9BDBA;
+    --mist-500:#7C9390;
+    --fjord-500:#4C93A2;
+    --fjord-400:#6FB0BE;
+    --lichen-500:#7FA65C;
+    --lichen-300:#A9C98A;
+    --signal-400:#E8A33D;
+    --signal-300:#F0C078;
+    --rust-500:#C4502E;
+    --rust-700:#8F3620;
+    --rust-300:#E08867;
+    --radius-sm:8px;
+    --radius-md:14px;
+    --radius-lg:20px;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(circle at 15% -10%, #1B3339 0%, var(--ink-950) 45%) fixed;
+    color:var(--mist-100);
+    font-family:'Work Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding-bottom:64px;
+  }
+  h1,h2,h3,.display{
+    font-family:'Barlow Condensed','Work Sans',sans-serif;
+    letter-spacing:0.01em;
+    margin:0;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+  .hidden{display:none !important;}
+
+  #app{max-width:640px;margin:0 auto;padding:0 16px;}
+
+  /* ---------- Header ---------- */
+  .topbar{
+    padding:22px 0 14px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    border-bottom:1px solid var(--line-200);
+    margin-bottom:18px;
+  }
+  .brand-eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:var(--fjord-400);
+    margin-bottom:4px;
+  }
+  .brand-title{
+    font-size:34px;
+    font-weight:700;
+    line-height:1;
+    color:var(--mist-100);
+  }
+  .brand-sub{
+    font-size:13px;
+    color:var(--mist-500);
+    margin-top:6px;
+  }
+  .sync-pill{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--mist-300);
+    background:var(--ink-850);
+    border:1px solid var(--line-200);
+    border-radius:999px;
+    padding:6px 10px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .sync-pill button{
+    background:none;border:none;color:var(--fjord-400);
+    padding:0;font-size:13px;line-height:1;
+  }
+  .sync-dot{width:6px;height:6px;border-radius:50%;background:var(--lichen-500);flex-shrink:0;}
+  .sync-dot.loading{background:var(--signal-400);animation:pulse 1.2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  @media (prefers-reduced-motion:reduce){ .sync-dot.loading{animation:none;} }
+
+  /* ---------- Route spine (overview) ---------- */
+  .route-spine{position:relative;padding-left:26px;margin-top:6px;}
+
+  /* ---------- Region picker (Norte / Centro / Sur) ---------- */
+  .region-card{
+    width:100%;text-align:left;background:var(--ink-850);border:1px solid var(--line-200);
+    border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:12px;color:inherit;
+    display:flex;flex-direction:column;gap:8px;transition:border-color .15s, transform .15s;
+  }
+  .region-card:hover{border-color:var(--fjord-500);}
+  .region-card:active{transform:scale(0.99);}
+  .region-top{display:flex;align-items:center;gap:12px;}
+  .region-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
+  .region-name{font-family:'Barlow Condensed';font-size:26px;font-weight:700;line-height:1;}
+  .region-desc{font-size:12.5px;color:var(--mist-300);margin-top:3px;}
+  .region-meta{font-family:'IBM Plex Mono';font-size:11px;color:var(--mist-500);}
+  .route-spine::before{
+    content:'';position:absolute;left:9px;top:10px;bottom:10px;width:2px;
+    background:linear-gradient(var(--fjord-500), var(--line-300) 85%);
+    opacity:.6;
+  }
+  .stop{position:relative;margin-bottom:10px;}
+  .stop-dot{
+    position:absolute;left:-26px;top:22px;width:14px;height:14px;border-radius:50%;
+    border:3px solid var(--ink-950);box-shadow:0 0 0 1px var(--line-300);
+    z-index:2;
+  }
+  .stop-card{
+    width:100%;text-align:left;background:var(--ink-850);border:1px solid var(--line-200);
+    border-radius:var(--radius-md);padding:12px 14px;display:flex;align-items:center;
+    justify-content:space-between;gap:10px;color:inherit;transition:border-color .15s, transform .15s;
+  }
+  .stop-card:hover{border-color:var(--fjord-500);}
+  .stop-card:active{transform:scale(0.99);}
+  .stop-card:focus-visible{outline:2px solid var(--fjord-400);outline-offset:2px;}
+  .stop-main{min-width:0;}
+  .stop-name{font-family:'Barlow Condensed';font-size:19px;font-weight:600;line-height:1.15;}
+  .stop-km{font-family:'IBM Plex Mono';font-size:10.5px;color:var(--mist-500);margin-top:2px;}
+  .stop-status{font-size:11.5px;margin-top:4px;display:flex;align-items:center;gap:5px;}
+  .stop-status .txt{color:var(--mist-300);}
+  .stop-right{text-align:right;flex-shrink:0;}
+  .stop-temp{font-family:'IBM Plex Mono';font-size:20px;font-weight:500;}
+  .stop-wx{font-size:18px;line-height:1;margin-top:2px;}
+
+  /* ---------- Status pill / dot colors ---------- */
+  .dot-bueno{background:var(--lichen-500);}
+  .dot-precaucion{background:var(--signal-400);}
+  .dot-complicado{background:var(--rust-500);}
+  .dot-cortado{background:var(--rust-700);}
+  .dot-neutral{background:var(--mist-500);}
+  .dot-green{background:var(--lichen-500);}
+  .dot-orange{background:var(--signal-400);}
+  .dot-red{background:var(--rust-500);}
+
+  .status-banner{
+    border-radius:var(--radius-md);padding:14px 16px;display:flex;align-items:center;gap:12px;
+    border:1px solid var(--line-200);margin-bottom:16px;
+  }
+  .status-banner .dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+  .status-banner .label{font-family:'Barlow Condensed';font-size:20px;font-weight:600;}
+  .status-banner .since{font-size:12px;color:var(--mist-500);margin-top:2px;}
+  .bg-bueno{background:rgba(127,166,92,0.12);}
+  .bg-precaucion{background:rgba(232,163,61,0.12);}
+  .bg-complicado{background:rgba(196,80,46,0.12);}
+  .bg-cortado{background:rgba(143,54,32,0.16);}
+  .bg-neutral{background:var(--ink-850);}
+  .status-stale{font-size:11.5px;color:var(--signal-400);margin-top:6px;display:flex;align-items:center;gap:5px;}
+  .status-actions{display:flex;gap:8px;margin:-6px 0 16px;}
+  .status-actions .btn{flex:1;justify-content:center;font-size:13px;padding:9px 12px;}
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    border-radius:999px;border:1px solid var(--line-300);background:var(--ink-850);
+    color:var(--mist-100);padding:10px 16px;font-size:14px;font-weight:500;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .btn-primary{background:var(--fjord-500);border-color:var(--fjord-500);color:#08171A;font-weight:600;}
+  .btn-ghost{background:none;border:none;color:var(--fjord-400);padding:8px 4px;}
+  .btn-block{width:100%;justify-content:center;}
+  .btn:disabled{opacity:.5;cursor:default;}
+
+  .back-row{display:flex;align-items:center;gap:8px;margin:18px 0 10px;}
+  .back-row .btn-ghost{font-size:15px;}
+
+  /* ---------- Section headers ---------- */
+  .section-eyebrow{
+    font-family:'IBM Plex Mono';font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--fjord-400);margin:26px 0 10px;
+  }
+
+  /* ---------- Weather now card ---------- */
+  .wx-now{
+    background:var(--ink-850);border:1px solid var(--line-200);border-radius:var(--radius-lg);
+    padding:20px;display:flex;align-items:center;justify-content:space-between;gap:14px;
+  }
+  .wx-now .glyph{font-size:52px;line-height:1;}
+  .wx-now .temp{font-family:'Barlow Condensed';font-size:52px;font-weight:700;line-height:1;}
+  .wx-now .desc{color:var(--mist-300);font-size:14px;margin-top:2px;}
+  .wx-meta{display:flex;gap:16px;margin-top:14px;flex-wrap:wrap;}
+  .wx-meta div{font-size:12px;color:var(--mist-500);}
+  .wx-meta span{display:block;font-family:'IBM Plex Mono';color:var(--mist-100);font-size:15px;margin-top:2px;}
+
+  /* ---------- Forecast strip ---------- */
+  .fc-strip{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x proximity;}
+  .fc-strip::-webkit-scrollbar{height:5px;}
+  .fc-strip::-webkit-scrollbar-thumb{background:var(--line-300);border-radius:4px;}
+  .fc-day{
+    flex:0 0 auto;width:82px;background:var(--ink-850);border:1px solid var(--line-200);
+    border-radius:var(--radius-md);padding:12px 8px;text-align:center;scroll-snap-align:start;
+  }
+  .fc-day .d{font-family:'IBM Plex Mono';font-size:10.5px;color:var(--mist-500);text-transform:uppercase;}
+  .fc-day .g{font-size:24px;margin:8px 0 6px;}
+  .fc-day .hi{font-family:'IBM Plex Mono';font-size:14px;font-weight:500;}
+  .fc-day .lo{font-family:'IBM Plex Mono';font-size:12px;color:var(--mist-500);}
+  .fc-day .pr{font-size:10.5px;color:var(--fjord-400);margin-top:5px;}
+
+  /* ---------- Reports feed ---------- */
+  .report-card{
+    background:var(--ink-850);border:1px solid var(--line-200);border-radius:var(--radius-md);
+    padding:14px;margin-bottom:10px;
+  }
+  .report-card.is-history{opacity:.68;}
+  .report-latest-tag{
+    font-family:'IBM Plex Mono';font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--ink-950);background:var(--fjord-400);border-radius:4px;padding:2px 6px;margin-bottom:8px;
+    display:inline-block;
+  }
+  .report-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+  .report-badge{
+    font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;
+  }
+  .report-badge .dot{width:7px;height:7px;border-radius:50%;}
+  .report-time{font-family:'IBM Plex Mono';font-size:11px;color:var(--mist-500);}
+  .report-text{font-size:14px;line-height:1.5;color:var(--mist-100);}
+  .report-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .report-tags span{
+    font-size:10.5px;background:var(--ink-750);border:1px solid var(--line-200);color:var(--mist-300);
+    padding:3px 8px;border-radius:999px;
+  }
+  .report-photo{margin-top:10px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--line-200);}
+  .report-photo img{width:100%;display:block;max-height:280px;object-fit:cover;cursor:zoom-in;}
+  .report-author{font-size:11px;color:var(--mist-500);margin-top:8px;}
+  .empty-state{
+    text-align:center;padding:32px 16px;color:var(--mist-500);font-size:13.5px;
+    border:1px dashed var(--line-300);border-radius:var(--radius-md);
+  }
+
+  /* ---------- Official advisories ---------- */
+  .adv-section-head{display:flex;align-items:center;justify-content:space-between;margin:22px 0 10px;}
+  .adv-section-head .section-eyebrow{margin:0;}
+  .adv-add-btn{
+    font-family:'IBM Plex Mono';font-size:11px;color:var(--fjord-400);background:var(--ink-850);
+    border:1px solid var(--line-300);border-radius:999px;padding:6px 11px;white-space:nowrap;
+  }
+  .adv-card{
+    background:var(--ink-850);border:1px solid var(--line-200);border-radius:var(--radius-md);
+    padding:13px 14px;margin-bottom:10px;
+  }
+  .adv-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;cursor:pointer;}
+  .adv-card-top .src{font-family:'Barlow Condensed';font-size:16px;font-weight:600;color:var(--mist-100);}
+  .adv-card-top .meta{font-family:'IBM Plex Mono';font-size:10.5px;color:var(--mist-500);margin-top:2px;}
+  .adv-card-top .chev{color:var(--mist-500);font-size:13px;flex-shrink:0;margin-top:2px;}
+  .adv-summary{font-size:12.5px;color:var(--mist-300);margin-top:6px;}
+  .adv-items{margin-top:12px;border-top:1px solid var(--line-200);padding-top:12px;}
+  .adv-item{margin-bottom:10px;}
+  .adv-item:last-child{margin-bottom:0;}
+  .adv-badge{
+    font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px;display:inline-flex;align-items:center;gap:4px;
+    border:1px solid var(--line-200);margin-bottom:4px;
+  }
+  .adv-badge .dot{width:6px;height:6px;border-radius:50%;}
+  .adv-item-text{font-size:13px;line-height:1.5;color:var(--mist-100);}
+  .adv-item-stops{font-size:10.5px;color:var(--fjord-400);margin-top:3px;}
+  .adv-actions{display:flex;gap:14px;margin-top:12px;}
+  .adv-actions button{font-size:11.5px;color:var(--mist-500);background:none;border:none;padding:0;}
+  .adv-actions button.danger{color:var(--rust-300);}
+  .adv-raw{
+    margin-top:10px;font-family:'IBM Plex Mono';font-size:11px;white-space:pre-wrap;color:var(--mist-500);
+    background:var(--ink-950);border:1px solid var(--line-200);border-radius:var(--radius-sm);padding:10px;
+    max-height:200px;overflow-y:auto;
+  }
+  .stop-flags{display:flex;gap:4px;margin-top:3px;}
+  .stop-flags span{font-size:12px;}
+  .adv-mini{
+    background:var(--ink-850);border:1px solid var(--line-200);border-radius:var(--radius-md);
+    padding:12px 14px;margin-bottom:10px;
+  }
+
+  /* ---------- Intro copy (SEO + first-glance context) ---------- */
+  .intro-copy{
+    font-size:12.5px;line-height:1.6;color:var(--mist-300);margin:0 0 18px;max-width:56ch;
+  }
+  .intro-copy strong{color:var(--mist-100);font-weight:600;}
+
+  /* ---------- Route map ---------- */
+  .map-wrap{
+    border:1px solid var(--line-200);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:10px;
+    background:var(--ink-900);
+  }
+  #routeMap{width:100%;height:320px;background:var(--ink-900);}
+  #sectorMap{width:100%;height:260px;background:var(--ink-900);}
+  .map-legend{
+    display:flex;align-items:center;gap:16px;padding:10px 14px;font-size:11px;color:var(--mist-300);
+    border-top:1px solid var(--line-200);flex-wrap:wrap;
+  }
+  .map-legend .li{display:flex;align-items:center;gap:6px;}
+  .map-legend .sw{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .map-hint{font-size:11px;color:var(--mist-500);padding:0 14px 12px;line-height:1.5;}
+  .leaflet-popup-content-wrapper{background:#F5F1EA;color:#16262B;border-radius:10px;}
+  .leaflet-popup-tip{background:#F5F1EA;}
+  .leaflet-container a.leaflet-popup-close-button{color:#16262B;}
+  .leaflet-bar a{background:var(--ink-850) !important;color:var(--mist-100) !important;border-color:var(--line-300) !important;}
+  .leaflet-bar a:hover{background:var(--ink-750) !important;}
+  .leaflet-control-attribution{background:rgba(14,27,31,0.75) !important;color:var(--mist-500) !important;font-size:9px !important;}
+  .leaflet-control-attribution a{color:var(--fjord-400) !important;}
+
+  /* ---------- FAB ---------- */
+  .fab{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:40;
+    background:var(--fjord-500);color:#08171A;border:none;border-radius:999px;
+    padding:13px 22px;font-size:14.5px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.4);
+    display:flex;align-items:center;gap:7px;
+  }
+  .fab:active{transform:translateX(-50%) scale(.97);}
+
+  /* ---------- Sheet / modal ---------- */
+  .sheet-overlay{
+    position:fixed;inset:0;background:rgba(6,12,14,.65);z-index:50;
+    display:flex;align-items:flex-end;justify-content:center;
+  }
+  .sheet{
+    background:var(--ink-900);border:1px solid var(--line-200);border-bottom:none;
+    border-radius:20px 20px 0 0;width:100%;max-width:640px;max-height:88vh;overflow-y:auto;
+    padding:18px 18px 22px;
+  }
+  .sheet-handle{width:36px;height:4px;background:var(--line-300);border-radius:4px;margin:0 auto 14px;}
+  .sheet h2{font-size:24px;font-weight:600;margin-bottom:14px;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:12px;color:var(--mist-300);margin-bottom:6px;letter-spacing:.02em;}
+  select,textarea,input[type=text],input[type=number],input[type=date]{
+    width:100%;background:var(--ink-850);border:1px solid var(--line-300);color:var(--mist-100);
+    border-radius:var(--radius-sm);padding:11px 12px;font-size:14.5px;font-family:inherit;
+  }
+  .km-hint{font-size:11.5px;color:var(--fjord-400);margin-top:6px;min-height:14px;}
+  textarea{min-height:80px;resize:vertical;}
+  .cond-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .cond-btn{
+    border-radius:var(--radius-sm);border:1.5px solid var(--line-300);background:var(--ink-850);
+    padding:11px 8px;text-align:left;color:var(--mist-100);font-size:13px;display:flex;align-items:center;gap:8px;
+  }
+  .cond-btn .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .cond-btn.active{border-color:var(--fjord-400);background:var(--ink-750);}
+  .chip-grid{display:flex;flex-wrap:wrap;gap:7px;}
+  .chip{
+    border-radius:999px;border:1px solid var(--line-300);background:var(--ink-850);color:var(--mist-300);
+    padding:7px 12px;font-size:12.5px;
+  }
+  .chip.active{background:var(--fjord-500);border-color:var(--fjord-500);color:#08171A;font-weight:600;}
+  .photo-input{display:flex;align-items:center;gap:12px;}
+  .photo-preview{width:64px;height:64px;border-radius:var(--radius-sm);object-fit:cover;border:1px solid var(--line-300);}
+  .file-label{
+    border:1.5px dashed var(--line-300);border-radius:var(--radius-sm);padding:10px 14px;font-size:12.5px;
+    color:var(--mist-300);display:inline-block;
+  }
+  .sheet-actions{display:flex;gap:10px;margin-top:6px;}
+  .form-msg{font-size:12.5px;margin-top:10px;}
+  .form-msg.err{color:var(--rust-300);}
+  .form-msg.ok{color:var(--lichen-300);}
+
+  /* ---------- Lightbox ---------- */
+  .lightbox{position:fixed;inset:0;background:rgba(6,10,11,.92);z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .lightbox img{max-width:100%;max-height:100%;border-radius:8px;}
+
+  .footer-note{
+    text-align:center;font-size:11px;color:var(--mist-500);margin:34px 0 8px;line-height:1.6;
+  }
+
+  @media (min-width:520px){
+    .brand-title{font-size:40px;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="topbar">
+    <div>
+      <div class="brand-eyebrow">RUTA 7 · PUERTO MONTT → VILLA O'HIGGINS</div>
+      <h1 class="brand-title">Carretera Austral</h1>
+      <div class="brand-sub">Estado de la ruta, clima en vivo y reportes de la comunidad</div>
+    </div>
+  </div>
+
+  <div class="sync-pill" style="margin-bottom:16px;">
+    <span class="sync-dot" id="syncDot"></span>
+    <span id="syncText">actualizando…</span>
+    <button id="refreshBtn" title="Actualizar">⟳</button>
+  </div>
+
+  <p class="intro-copy">
+    Estado en vivo de la <strong>Carretera Austral (Ruta 7)</strong>, entre Puerto Montt y Villa O'Higgins:
+    Hornopirén, Chaitén, Futaleufú, La Junta, Puyuhuapi, Coyhaique, Puerto Aysén, Villa Cerro Castillo,
+    Cochrane, Caleta Tortel y Villa O'Higgins. Clima y pronóstico por tramo, avisos oficiales de cortes
+    y cadenas obligatorias, y reportes de viajeros con fecha, hora y fotos.
+  </p>
+
+  <!-- ===================== OVERVIEW ===================== -->
+  <div id="viewOverview">
+    <div class="section-eyebrow" style="margin-top:0;">Mapa de la ruta</div>
+    <div class="map-wrap">
+      <div id="routeMap"></div>
+      <div class="map-legend">
+        <span class="li"><span class="sw" style="background:var(--lichen-500);"></span>Buen estado</span>
+        <span class="li"><span class="sw" style="background:var(--signal-400);"></span>Nieve o incidente reportado</span>
+        <span class="li"><span class="sw" style="background:var(--rust-500);"></span>Cadenas / hielo / ruta cortada</span>
+      </div>
+      <div class="map-hint">El color combina reportes de viajeros, avisos oficiales y el clima de cada punto. Toca un punto para ver su detalle.</div>
+    </div>
+
+    <div class="adv-section-head">
+      <div class="section-eyebrow">Avisos oficiales</div>
+      <button class="adv-add-btn" id="addAdvisoryBtn">＋ Pegar aviso</button>
+    </div>
+    <div id="advisoryList"></div>
+
+    <div class="section-eyebrow" id="routeEyebrow">La ruta, de norte a sur</div>
+    <div class="back-row hidden" id="regionBackRow" style="margin:0 0 10px;">
+      <button class="btn-ghost" id="regionBackBtn">← todas las zonas</button>
+    </div>
+    <div class="route-spine" id="routeSpine"></div>
+    <div class="footer-note">Los reportes son publicados por otras personas usando la ruta.<br>Verifica siempre condiciones oficiales antes de viajar (Vialidad / Carabineros).</div>
+  </div>
+
+  <!-- ===================== DETAIL ===================== -->
+  <div id="viewDetail" class="hidden">
+    <div class="back-row">
+      <button class="btn-ghost" id="backBtn">← volver a la ruta</button>
+    </div>
+    <h2 class="display" id="detailName" style="font-size:30px;font-weight:700;"></h2>
+    <div class="mono" id="detailKm" style="font-size:11px;color:var(--mist-500);margin:2px 0 14px;"></div>
+
+    <div class="status-banner bg-neutral" id="statusBanner">
+      <span class="dot dot-neutral" id="statusDot"></span>
+      <div>
+        <div class="label" id="statusLabel">Sin reportes recientes</div>
+        <div class="since" id="statusSince">Sé el primero en reportar el estado de este tramo</div>
+        <div class="status-stale hidden" id="statusStale">⏱ Este reporte tiene varias horas — confirma si sigue así</div>
+      </div>
+    </div>
+    <div class="status-actions hidden" id="statusActions">
+      <button class="btn" id="confirmSameBtn">✓ Sigue así</button>
+      <button class="btn" id="updateStatusBtn">Actualizar estado</button>
+    </div>
+
+    <div class="section-eyebrow" style="margin-top:16px;">Este tramo en detalle</div>
+    <div class="map-wrap">
+      <div id="sectorMap"></div>
+    </div>
+
+    <div id="detailAdvisories"></div>
+
+    <div class="section-eyebrow">Clima ahora</div>
+    <div id="wxNowWrap"></div>
+
+    <div class="section-eyebrow">Próximos días</div>
+    <div class="fc-strip" id="fcStrip"></div>
+
+    <div class="section-eyebrow">Reportes de la ruta</div>
+    <div id="reportsFeed"></div>
+  </div>
+
+</div>
+
+<button class="fab" id="fabAdd">＋ Reportar estado</button>
+
+<!-- ===================== FORM SHEET ===================== -->
+<div class="sheet-overlay hidden" id="sheetOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>Reportar estado de la ruta</h2>
+    <form id="reportForm">
+      <div class="field">
+        <label for="kmInput">Kilómetro de la ruta (Puerto Montt = km 0, Villa O'Higgins ≈ km 1181)</label>
+        <input type="number" id="kmInput" min="0" max="1181" step="0.5" placeholder="Ej: 437" required>
+        <div class="km-hint" id="kmHint"></div>
+      </div>
+
+      <div class="field">
+        <label>Condición del camino</label>
+        <div class="cond-grid" id="condGrid"></div>
+      </div>
+
+      <div class="field">
+        <label>Incidentes (opcional)</label>
+        <div class="chip-grid" id="tagGrid"></div>
+      </div>
+
+      <div class="field">
+        <label for="descInput">Descripción</label>
+        <textarea id="descInput" placeholder="Ej: tramo de ripio con barro entre km 40 y 55, transitable con precaución a baja velocidad." required></textarea>
+      </div>
+
+      <div class="field">
+        <label for="photoInput">Foto del estado actual (opcional)</label>
+        <div class="photo-input">
+          <label class="file-label" id="fileLabel">Elegir foto
+            <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;">
+          </label>
+          <img id="photoPreview" class="photo-preview hidden">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="authorInput">Tu nombre (opcional)</label>
+        <input type="text" id="authorInput" placeholder="Viajero anónimo" maxlength="40">
+      </div>
+
+      <div class="sheet-actions">
+        <button type="button" class="btn" id="cancelBtn" style="flex:1;">Cancelar</button>
+        <button type="submit" class="btn btn-primary" id="submitBtn" style="flex:2;">Publicar reporte</button>
+      </div>
+      <div class="form-msg" id="formMsg"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== ADVISORY PASTE SHEET ===================== -->
+<div class="sheet-overlay hidden" id="advSheetOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>Pegar aviso oficial</h2>
+    <div style="font-size:12.5px;color:var(--mist-500);margin-bottom:16px;line-height:1.5;">
+      Pega el texto completo del aviso (Vialidad, Carabineros, Seremi, etc). Se detectan automáticamente los sectores, rutas y kilómetros mencionados para ubicarlos en el mapa de la ruta.
+    </div>
+    <form id="advisoryForm">
+      <div class="field">
+        <label for="advSource">Fuente (opcional)</label>
+        <input type="text" id="advSource" placeholder="Ej: Vialidad Aysén, Carabineros de Chile">
+      </div>
+      <div class="field">
+        <label for="advExpiry">Vigente hasta (opcional)</label>
+        <input type="date" id="advExpiry">
+      </div>
+      <div class="field">
+        <label for="advText">Texto completo del aviso</label>
+        <textarea id="advText" style="min-height:180px;" placeholder="Pega aquí el mensaje tal como lo recibiste…" required></textarea>
+      </div>
+      <div class="sheet-actions">
+        <button type="button" class="btn" id="advCancelBtn" style="flex:1;">Cancelar</button>
+        <button type="submit" class="btn btn-primary" id="advSubmitBtn" style="flex:2;">Publicar aviso</button>
+      </div>
+      <div class="form-msg" id="advFormMsg"></div>
+    </form>
+  </div>
+</div>
+
+<div class="lightbox hidden" id="lightbox"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- Route data ----------------
+  // Mainline points, ordered south from Puerto Montt, with approximate official
+  // km-post distances compiled from historical route descriptions (villaohiggins.com
+  // route guide, cross-checked against several travel-guide sources). These are
+  // reference distances, not surveyed data — real Vialidad km posts may differ by
+  // a few km in places where the road has since been realigned or paved.
+  const LOCATIONS = [
+    { id:'puerto-montt',      name:'Puerto Montt',          km:0,    lat:-41.4693, lon:-72.9424 },
+    { id:'caleta-la-arena',   name:'Caleta La Arena',       km:46,   lat:-41.6597, lon:-72.6262 },
+    { id:'contao',            name:'Contao',                km:56,   lat:-41.7419, lon:-72.6081 },
+    { id:'caleta-manzano',    name:'Caleta Manzano',        km:80,   lat:-42.0056, lon:-72.5417 },
+    { id:'hornopiren',        name:'Hornopirén',            km:104,  lat:-41.9761, lon:-72.4331 },
+    { id:'caleta-gonzalo',    name:'Caleta Gonzalo',        km:149,  lat:-42.5464, lon:-72.4763 },
+    { id:'chaiten',           name:'Chaitén',               km:205,  lat:-42.9165, lon:-72.7062 },
+    { id:'termas-amarillo',   name:'Termas El Amarillo',    km:230,  lat:-43.0847, lon:-72.5972 },
+    { id:'puerto-cardenas',   name:'Puerto Cárdenas',       km:250,  lat:-43.1500, lon:-72.4833 },
+    { id:'villa-santa-lucia', name:'Villa Santa Lucía',     km:281,  lat:-43.1583, lon:-72.1583 },
+    { id:'la-junta',          name:'La Junta',              km:353,  lat:-43.9667, lon:-72.4167 },
+    { id:'puyuhuapi',         name:'Puyuhuapi',             km:397,  lat:-44.3167, lon:-72.5667 },
+    { id:'cruce-cisnes',      name:'Cruce Puerto Cisnes',   km:460,  lat:-44.5833, lon:-72.3167 },
+    { id:'villa-amengual',    name:'Villa Amengual',        km:484,  lat:-44.7667, lon:-72.2333 },
+    { id:'villa-manihuales',  name:'Villa Mañihuales',      km:539,  lat:-45.1667, lon:-71.8500 },
+    { id:'villa-ortega',      name:'Villa Ortega',          km:580,  lat:-45.3667, lon:-71.9333 },
+    { id:'coyhaique',         name:'Coyhaique',             km:625,  lat:-45.5752, lon:-72.0662 },
+    { id:'cerro-castillo',    name:'Villa Cerro Castillo',  km:723,  lat:-45.8667, lon:-72.1667 },
+    { id:'bahia-murta',       name:'Bahía Murta',           km:828,  lat:-46.4333, lon:-72.6667 },
+    { id:'rio-tranquilo',     name:'Puerto Río Tranquilo',  km:850,  lat:-46.6392, lon:-72.9639 },
+    { id:'puerto-bertrand',   name:'Puerto Bertrand',       km:907,  lat:-46.9386, lon:-72.8494 },
+    { id:'cochrane',          name:'Cochrane',              km:952,  lat:-47.2544, lon:-72.5730 },
+    { id:'puerto-vagabundo',  name:'Puerto Vagabundo',      km:1052, lat:-47.5333, lon:-73.2000 },
+    { id:'puerto-yungay',     name:'Puerto Yungay',         km:1075, lat:-47.9833, lon:-73.4667 },
+    { id:'villa-ohiggins',    name:"Villa O'Higgins",       km:1181, lat:-48.4676, lon:-72.5615 }
+  ];
+  const ROUTE_KM_MAX = LOCATIONS[LOCATIONS.length-1].km;
+
+  // Off-mainline towns reached by a side road — shown for weather reference only,
+  // not part of the through-route km sequence used for reports/road colouring.
+  const SPUR_LOCATIONS = [
+    { id:'futaleufu',    name:'Futaleufú',    lat:-43.1878, lon:-71.8657, nearId:'villa-santa-lucia' },
+    { id:'puerto-aysen',  name:'Puerto Aysén', lat:-45.4023, lon:-72.6935, nearId:'coyhaique' },
+    { id:'caleta-tortel', name:'Caleta Tortel',lat:-47.7833, lon:-73.5333, nearId:'puerto-vagabundo' }
+  ];
+  const ALL_WEATHER_POINTS = LOCATIONS.concat(SPUR_LOCATIONS);
+
+  // Sectors: one per gap between consecutive mainline points — this is the unit
+  // reports, road-condition colouring and official-advisory matching attach to.
+  const SECTORS = [];
+  for(let i=0;i<LOCATIONS.length-1;i++){
+    const a = LOCATIONS[i], b = LOCATIONS[i+1];
+    SECTORS.push({ id:`sec-${a.id}-${b.id}`, name:`${a.name} → ${b.name}`, idxFrom:i, idxTo:i+1, fromLoc:a, toLoc:b, kmFrom:a.km, kmTo:b.km });
+  }
+  function sectorsTouching(locId){
+    return SECTORS.filter(s => s.fromLoc.id === locId || s.toLoc.id === locId).map(s => s.id);
+  }
+  function sectorById(id){ return SECTORS.find(s => s.id === id) || null; }
+  function sectorForKm(km){
+    km = Math.max(0, Math.min(km, ROUTE_KM_MAX));
+    let s = SECTORS.find(s => km >= s.kmFrom && km <= s.kmTo);
+    if(!s) s = km < SECTORS[0].kmFrom ? SECTORS[0] : SECTORS[SECTORS.length-1];
+    return s;
+  }
+
+  // Three broad zones so the sector list is never more than a handful of rows
+  // at once — split into even eighths of the 24 sectors, roughly matching the
+  // real feel of the route (northern lakes/fjords, the Aysén heartland through
+  // Coyhaique, and the remote southern stretch to Villa O'Higgins).
+  const REGIONS = [
+    { id:'norte',  name:'Norte',  desc:`${LOCATIONS[0].name} → ${LOCATIONS[8].name}`,  range:[0,8] },
+    { id:'centro', name:'Centro', desc:`${LOCATIONS[8].name} → ${LOCATIONS[16].name}`, range:[8,16] },
+    { id:'sur',    name:'Sur',    desc:`${LOCATIONS[16].name} → ${LOCATIONS[24].name}`,range:[16,24] }
+  ];
+  function regionSectors(region){ return SECTORS.slice(region.range[0], region.range[1]); }
+
+  const STATUS = {
+    bueno:      { label:'Buen estado',     cls:'bueno' },
+    precaucion: { label:'Con precaución',  cls:'precaucion' },
+    complicado: { label:'Complicado',      cls:'complicado' },
+    cortado:    { label:'Ruta cortada',    cls:'cortado' }
+  };
+
+  const TAGS = ['Lluvia intensa','Nieve / hielo','Barro','Derrumbe','Corte de ruta','Demora transbordador','Trabajos viales','Otro'];
+
+  const WMO = {
+    0:['Despejado','☀️'],1:['Mayormente despejado','🌤️'],2:['Parcialmente nublado','⛅'],3:['Nublado','☁️'],
+    45:['Niebla','🌫️'],48:['Niebla escarchada','🌫️'],
+    51:['Llovizna débil','🌦️'],53:['Llovizna','🌦️'],55:['Llovizna intensa','🌧️'],
+    56:['Llovizna helada','🌧️'],57:['Llovizna helada intensa','🌧️'],
+    61:['Lluvia débil','🌧️'],63:['Lluvia','🌧️'],65:['Lluvia intensa','🌧️'],
+    66:['Lluvia helada','🌨️'],67:['Lluvia helada intensa','🌨️'],
+    71:['Nieve débil','🌨️'],73:['Nieve','🌨️'],75:['Nieve intensa','❄️'],77:['Granizo fino','🌨️'],
+    80:['Chubascos débiles','🌦️'],81:['Chubascos','🌧️'],82:['Chubascos intensos','⛈️'],
+    85:['Chubascos de nieve','🌨️'],86:['Chubascos de nieve intensos','❄️'],
+    95:['Tormenta eléctrica','⛈️'],96:['Tormenta con granizo','⛈️'],99:['Tormenta con granizo intenso','⛈️']
+  };
+  function wmo(code){ return WMO[code] || ['Sin datos','—']; }
+
+  const DOW = ['dom','lun','mar','mié','jue','vie','sáb'];
+
+  // ---------------- Official advisory parsing ----------------
+  const ADV_CATS = {
+    cadenas:    { label:'Cadenas obligatorias',    icon:'⛓️', cls:'complicado' },
+    corte:      { label:'Corte total',             icon:'🚫', cls:'cortado' },
+    parcial:    { label:'Interrupción parcial',    icon:'🚧', cls:'precaucion' },
+    precaucion: { label:'Precaución / restricción',icon:'⚠️', cls:'precaucion' },
+    aviso:      { label:'Aviso',                   icon:'📌', cls:'neutral' }
+  };
+
+  // Landmarks/place names mentioned in bulletins, mapped onto the sector(s) that
+  // touch the nearest mainline point (or nearest mainline anchor, for spur towns).
+  const PLACE_KEYWORDS = [
+    { re:/puerto\s*montt/,        ids:sectorsTouching('puerto-montt') },
+    { re:/la\s*arena/,            ids:sectorsTouching('caleta-la-arena') },
+    { re:/\bcontao\b/,            ids:sectorsTouching('contao') },
+    { re:/manzano/,               ids:sectorsTouching('caleta-manzano') },
+    { re:/hornopiren/,            ids:sectorsTouching('hornopiren') },
+    { re:/caleta\s*gonzalo|pumalin/, ids:sectorsTouching('caleta-gonzalo') },
+    { re:/chaiten/,                ids:sectorsTouching('chaiten') },
+    { re:/amarillo/,               ids:sectorsTouching('termas-amarillo') },
+    { re:/cardenas|yelcho/,        ids:sectorsTouching('puerto-cardenas') },
+    { re:/santa\s*lucia/,          ids:sectorsTouching('villa-santa-lucia') },
+    { re:/futaleufu/,              ids:sectorsTouching('villa-santa-lucia') },
+    { re:/la\s*junta/,             ids:sectorsTouching('la-junta') },
+    { re:/palena|rosselot/,        ids:sectorsTouching('la-junta') },
+    { re:/puyuhuapi|queulat/,      ids:sectorsTouching('puyuhuapi') },
+    { re:/cisnes/,                 ids:sectorsTouching('cruce-cisnes') },
+    { re:/amengual/,               ids:sectorsTouching('villa-amengual') },
+    { re:/manihuales/,             ids:sectorsTouching('villa-manihuales') },
+    { re:/\bortega\b/,             ids:sectorsTouching('villa-ortega') },
+    { re:/coyhaique/,              ids:sectorsTouching('coyhaique') },
+    { re:/puerto\s*aysen|ibanez/,  ids:sectorsTouching('coyhaique') },
+    { re:/cerro\s*castillo/,       ids:sectorsTouching('cerro-castillo') },
+    { re:/rio\s*tranquilo|\bmurta\b/, ids:[...sectorsTouching('bahia-murta'), ...sectorsTouching('rio-tranquilo')] },
+    { re:/bertrand|catalan/,       ids:sectorsTouching('puerto-bertrand') },
+    { re:/cochrane/,               ids:sectorsTouching('cochrane') },
+    { re:/vagabundo/,              ids:sectorsTouching('puerto-vagabundo') },
+    { re:/tortel/,                 ids:sectorsTouching('puerto-vagabundo') },
+    { re:/yungay/,                 ids:sectorsTouching('puerto-yungay') },
+    { re:/o.?higgins/,             ids:sectorsTouching('villa-ohiggins') }
+  ];
+
+  function normalizeTxt(s){
+    return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  }
+  function stripLead(line){
+    return line.replace(/^[\s•■▪\-\*"'`📍📌⚠️🔴🚫⛔🚧⛓️#]+/u,'').trim();
+  }
+  function detectCategory(normLine){
+    if(/caden/.test(normLine)) return 'cadenas';
+    if(/corte total|interrupcion total|cierre total/.test(normLine)) return 'corte';
+    if(/interrupcion parcial|\bparcial/.test(normLine)) return 'parcial';
+    if(/precaucion|restriccion/.test(normLine)) return 'precaucion';
+    return null;
+  }
+  function placeMatches(text){
+    const norm = normalizeTxt(text);
+    const ids = new Set();
+    PLACE_KEYWORDS.forEach(p=>{ if(p.re.test(norm)) p.ids.forEach(id=>ids.add(id)); });
+    return Array.from(ids);
+  }
+  function kmRangesInText(text){
+    const ranges = [];
+    const rangeRe = /km\.?\s*(\d{1,4})\s*(?:al|a|-|–)\s*(\d{1,4})/gi;
+    let m;
+    while((m = rangeRe.exec(text))){ ranges.push([parseInt(m[1],10), parseInt(m[2],10)]); }
+    const stripped = text.replace(rangeRe, '');
+    const singleRe = /km\.?\s*(\d{1,4})/gi;
+    let s;
+    while((s = singleRe.exec(stripped))){ ranges.push([parseInt(s[1],10), parseInt(s[1],10)]); }
+    return ranges;
+  }
+  function sectorsOverlappingKmRange(a,b){
+    const lo = Math.min(a,b), hi = Math.max(a,b);
+    return SECTORS.filter(s => s.kmTo >= lo && s.kmFrom <= hi).map(s => s.id);
+  }
+  function idsFromKmRanges(ranges){
+    const ids = new Set();
+    ranges.forEach(([a,b]) => { sectorsOverlappingKmRange(a,b).forEach(id => ids.add(id)); });
+    return Array.from(ids);
+  }
+
+  // Parses a raw pasted bulletin into structured, per-sector items. Content is
+  // never discarded — every line either joins an item or updates the running
+  // category; the full raw text is also kept and shown alongside the result.
+  function parseAdvisoryText(raw){
+    const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
+    const items = [];
+    let current = null;
+    let runningCat = null;
+    let currentRoad = 'ruta7';
+    let source = '';
+
+    function pushCurrent(){
+      if(current && current.text.replace(/[:\s]/g,'').length > 2) items.push(current);
+      current = null;
+    }
+
+    lines.forEach(line=>{
+      const core = stripLead(line);
+      if(!core) return;
+      const normCore = normalizeTxt(core);
+
+      if(/^fuente\b/.test(normCore)){ source = core.replace(/^fuente\s*:?\s*/i,'').trim(); return; }
+      if(/^ruta\s*7\.?$/.test(normCore)){ currentRoad = 'ruta7'; return; }
+      if(/^otras\s*rutas/.test(normCore)){ currentRoad = 'other'; return; }
+
+      const cat = detectCategory(normCore);
+      if(cat) runningCat = cat;
+
+      const isBulletHeader = core.length > 5 && (
+        /^[•■▪]/.test(line) ||
+        /^(ruta|cuesta|puente|portezuelo|laguna|barrancoso)\b/i.test(core) ||
+        /^x-\d/i.test(core) || /^ch-\d/i.test(core)
+      );
+
+      if(isBulletHeader){
+        pushCurrent();
+        current = { text: core.replace(/:\s*$/,''), road: currentRoad, catSnapshot: runningCat };
+        return;
+      }
+      if(current){ current.text += ' ' + core; }
+    });
+    pushCurrent();
+
+    const built = items.map(it=>{
+      const selfCat = detectCategory(normalizeTxt(it.text));
+      const category = selfCat || it.catSnapshot || 'aviso';
+      const ranges = it.road === 'ruta7' ? kmRangesInText(it.text) : [];
+      const kmIds = idsFromKmRanges(ranges);
+      const placeIds = placeMatches(it.text);
+      const affected = Array.from(new Set([...kmIds, ...placeIds]));
+      return { text: it.text.trim(), category, affected };
+    });
+
+    return { items: built, source };
+  }
+
+  // ---------------- Geometry: real road-following route via OSRM ----------------
+  function haversineKm(lat1,lon1,lat2,lon2){
+    const R = 6371;
+    const dLat = (lat2-lat1)*Math.PI/180;
+    const dLon = (lon2-lon1)*Math.PI/180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return 2*R*Math.asin(Math.sqrt(Math.min(1,a)));
+  }
+  function buildLegCum(coords){
+    const cum = [0];
+    for(let i=1;i<coords.length;i++){
+      cum.push(cum[i-1] + haversineKm(coords[i-1][0],coords[i-1][1], coords[i][0],coords[i][1]));
+    }
+    return cum;
+  }
+  function pointAtFraction(leg, frac){
+    const target = Math.max(0, Math.min(1, frac)) * leg.cumKm[leg.cumKm.length-1];
+    let i = 1;
+    while(i < leg.cumKm.length && leg.cumKm[i] < target) i++;
+    if(i >= leg.cumKm.length) i = leg.cumKm.length - 1;
+    const segLen = leg.cumKm[i] - leg.cumKm[i-1];
+    const segFrac = segLen > 0 ? (target - leg.cumKm[i-1]) / segLen : 0;
+    const a = leg.coords[i-1], b = leg.coords[i];
+    return { lat: a[0] + (b[0]-a[0])*segFrac, lon: a[1] + (b[1]-a[1])*segFrac };
+  }
+
+  async function fetchLegGeometry(fromLoc, toLoc){
+    const url = `https://router.project-osrm.org/route/v1/driving/${fromLoc.lon},${fromLoc.lat};${toLoc.lon},${toLoc.lat}?overview=full&geometries=geojson&steps=false`;
+    try{
+      const res = await fetch(url);
+      if(!res.ok) return null;
+      const data = await res.json();
+      if(data.code !== 'Ok' || !data.routes || !data.routes[0]) return null;
+      const coords = data.routes[0].geometry.coordinates.map(([lon,lat]) => [lat,lon]);
+      if(coords.length < 2) return null;
+      return { coords, cumKm: buildLegCum(coords) };
+    }catch(e){
+      return null;
+    }
+  }
+
+  async function fetchAllLegGeometries(onProgress){
+    const results = {};
+    const batchSize = 4;
+    for(let i=0;i<SECTORS.length;i+=batchSize){
+      const batch = SECTORS.slice(i, i+batchSize);
+      const settled = await Promise.all(batch.map(s => fetchLegGeometry(s.fromLoc, s.toLoc)));
+      batch.forEach((s, j) => { results[s.id] = settled[j]; });
+      if(onProgress) onProgress(Math.min(i+batchSize, SECTORS.length), SECTORS.length);
+    }
+    return results;
+  }
+
+  function interpolateKm(km){
+    const s = sectorForKm(km);
+    const frac = (s.kmTo === s.kmFrom) ? 0 : (km - s.kmFrom) / (s.kmTo - s.kmFrom);
+    const leg = state.legGeometry[s.id];
+    if(leg && leg.coords && leg.coords.length > 1){
+      const p = pointAtFraction(leg, frac);
+      return { lat:p.lat, lon:p.lon, sectorId:s.id };
+    }
+    return {
+      lat: s.fromLoc.lat + (s.toLoc.lat - s.fromLoc.lat) * frac,
+      lon: s.fromLoc.lon + (s.toLoc.lon - s.fromLoc.lon) * frac,
+      sectorId: s.id
+    };
+  }
+
+  // ---------------- App state ----------------
+  let state = {
+    currentSector: null,        // sector object when in detail view
+    currentRegion: null,        // region object when browsing a zone's sector list
+    overviewWx: {},             // pointId -> {temp, code}
+    latestReport: {},           // sectorId -> report or null
+    detailForecast: null,
+    detailReports: [],
+    advisories: [],
+    advisoryExpanded: new Set(),
+    selectedCondition: 'bueno',
+    selectedTags: new Set(),
+    photoData: null,
+    legGeometry: {},            // sectorId -> {coords, cumKm} | null
+    geometryLoaded: false
+  };
+
+  // ---------------- Combined severity ----------------
+  const SEV_RANK = { green:0, orange:1, red:2 };
+  const SEVERITY_COLORS = { green:'#7FA65C', orange:'#E8A33D', red:'#C4502E' };
+  const SEVERITY_LABELS = { green:'Buen estado', orange:'Nieve o incidente reportado', red:'Cadenas / hielo / ruta cortada' };
+  function worseSev(a,b){ return SEV_RANK[b] > SEV_RANK[a] ? b : a; }
+
+  function reportSeverity(report){
+    if(!report) return 'green';
+    if(report.condition === 'cortado') return 'red';
+    if(report.condition === 'complicado' || report.condition === 'precaucion') return 'orange';
+    return 'green';
+  }
+  function advisoriesForSector(sectorId){
+    const out = [];
+    state.advisories.forEach(bulletin=>{
+      if(isAdvisoryExpired(bulletin)) return;
+      (bulletin.items||[]).forEach(item=>{
+        if(item.affected && item.affected.includes(sectorId)){
+          out.push({ ...item, source: bulletin.source, ts: bulletin.ts, bulletinId: bulletin.id, rawText: bulletin.rawText });
+        }
+      });
+    });
+    return out;
+  }
+  function advisorySeverityForSector(sectorId){
+    let sev = 'green';
+    advisoriesForSector(sectorId).forEach(it=>{
+      let s = 'green';
+      if(it.category === 'cadenas' || it.category === 'corte') s = 'red';
+      else if(it.category === 'parcial' || it.category === 'precaucion') s = 'orange';
+      sev = worseSev(sev, s);
+    });
+    return sev;
+  }
+  function weatherSeverityFor(wx){
+    if(!wx || wx.code == null) return 'green';
+    const heavySnow = [75,86];
+    const snowOrIce = [56,57,66,67,71,73,77,85];
+    if(heavySnow.includes(wx.code)) return 'red';
+    if(snowOrIce.includes(wx.code)) return (wx.temp !== undefined && wx.temp <= -3) ? 'red' : 'orange';
+    return 'green';
+  }
+  function combinedSeverity(sectorId){
+    const s = sectorById(sectorId);
+    let sev = 'green';
+    sev = worseSev(sev, reportSeverity(state.latestReport[sectorId]));
+    sev = worseSev(sev, advisorySeverityForSector(sectorId));
+    if(s) sev = worseSev(sev, weatherSeverityFor(state.overviewWx[s.fromLoc.id]));
+    return sev;
+  }
+
+  function isAdvisoryExpired(bulletin){
+    if(!bulletin.expiry) return false;
+    const exp = new Date(bulletin.expiry + 'T23:59:59');
+    return Date.now() > exp.getTime();
+  }
+
+  const $ = (sel) => document.querySelector(sel);
+  const el = (tag, cls, html) => { const e = document.createElement(tag); if(cls) e.className = cls; if(html!==undefined) e.innerHTML = html; return e; };
+
+  function relTime(iso){
+    const d = new Date(iso);
+    const diffMs = Date.now() - d.getTime();
+    const min = Math.floor(diffMs/60000);
+    if(min < 1) return 'recién ahora';
+    if(min < 60) return `hace ${min} min`;
+    const hr = Math.floor(min/60);
+    if(hr < 24) return `hace ${hr} h`;
+    const day = Math.floor(hr/24);
+    if(day < 7) return `hace ${day} d`;
+    return d.toLocaleDateString('es-CL', {day:'2-digit', month:'short'});
+  }
+  function fmtDateTime(iso){
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-CL',{day:'2-digit',month:'short'}) + ' · ' +
+           d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+  }
+
+  // ---------------- Storage ----------------
+  // Talks to this app's own backend (server.js) rather than any Claude-specific
+  // API, so this works the same whether it's opened via Claude or deployed on
+  // its own domain (Railway, Hostinger, etc). Reports/advisories are shared
+  // across every visitor because they live on the server, not in the browser.
+  async function getReports(sectorId){
+    try{
+      const res = await fetch(`/api/reports/${encodeURIComponent(sectorId)}`);
+      if(!res.ok) return [];
+      return await res.json();
+    }catch(e){
+      return [];
+    }
+  }
+  async function saveReport(sectorId, report){
+    const res = await fetch(`/api/reports/${encodeURIComponent(sectorId)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(report)
+    });
+    if(!res.ok){
+      const body = await res.json().catch(()=>({}));
+      throw new Error(body.error || 'No se pudo guardar el reporte. Intenta nuevamente.');
+    }
+    return await res.json();
+  }
+  async function getAdvisories(){
+    try{
+      const res = await fetch('/api/advisories');
+      if(!res.ok) return [];
+      return await res.json();
+    }catch(e){
+      return [];
+    }
+  }
+  async function saveAdvisory(bulletin){
+    const res = await fetch('/api/advisories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bulletin)
+    });
+    if(!res.ok){
+      const body = await res.json().catch(()=>({}));
+      throw new Error(body.error || 'No se pudo guardar el aviso. Intenta nuevamente.');
+    }
+    return await res.json();
+  }
+  async function removeAdvisory(id){
+    try{
+      const res = await fetch(`/api/advisories/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if(!res.ok) return state.advisories;
+      return await res.json();
+    }catch(e){
+      return state.advisories;
+    }
+  }
+
+  // ---------------- Weather ----------------
+  async function fetchOverviewWeather(){
+    const lats = ALL_WEATHER_POINTS.map(l=>l.lat).join(',');
+    const lons = ALL_WEATHER_POINTS.map(l=>l.lon).join(',');
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&current=temperature_2m,weather_code&timezone=America%2FSantiago`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('weather');
+    const data = await res.json();
+    const arr = Array.isArray(data) ? data : [data];
+    arr.forEach((d, i) => {
+      const loc = ALL_WEATHER_POINTS[i];
+      if(loc && d && d.current){
+        state.overviewWx[loc.id] = { temp: d.current.temperature_2m, code: d.current.weather_code };
+      }
+    });
+  }
+  async function fetchLocationForecast(loc){
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}` +
+      `&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_gusts_10m` +
+      `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max` +
+      `&timezone=America%2FSantiago&forecast_days=7`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('forecast');
+    return res.json();
+  }
+
+  // ---------------- Route map (overview) ----------------
+  let routeMap = null;
+  let mapMarkers = {};
+  let mapSegments = {};
+
+  function initMap(){
+    if(routeMap || typeof L === 'undefined') return;
+    routeMap = L.map('routeMap', { attributionControl:true, scrollWheelZoom:false, zoomControl:true });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains:'abcd', maxZoom:17
+    }).addTo(routeMap);
+
+    const bounds = L.latLngBounds(LOCATIONS.map(l=>[l.lat, l.lon]));
+    routeMap.fitBounds(bounds, { padding:[22,22] });
+
+    SECTORS.forEach(s=>{
+      const line = L.polyline([[s.fromLoc.lat,s.fromLoc.lon],[s.toLoc.lat,s.toLoc.lon]], { color:SEVERITY_COLORS.green, weight:4, opacity:0.85 });
+      line.on('click', ()=> openDetail(s.id));
+      line.addTo(routeMap);
+      mapSegments[s.id] = line;
+    });
+
+    LOCATIONS.forEach(loc=>{
+      const marker = L.circleMarker([loc.lat, loc.lon], {
+        radius:4, color:'#0E1B1F', weight:1.5, fillColor:'#A9BDBA', fillOpacity:1
+      });
+      marker.bindPopup(`<div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;">${loc.name}</div><div style="font-size:10.5px;">KM ${loc.km}</div>`);
+      marker.addTo(routeMap);
+      mapMarkers[loc.id] = marker;
+    });
+
+    updateMapColors();
+  }
+
+  function updateMapColors(){
+    if(!routeMap) return;
+    SECTORS.forEach(s=>{
+      const line = mapSegments[s.id];
+      if(!line) return;
+      const sev = combinedSeverity(s.id);
+      line.setStyle({ color: SEVERITY_COLORS[sev] });
+      const wx = state.overviewWx[s.fromLoc.id];
+      const wxInfo = wx ? wmo(wx.code) : null;
+      line.bindPopup(
+        `<div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:600;">${s.name}</div>` +
+        `<div style="font-size:11px;margin:2px 0;">KM ${s.kmFrom} – ${s.kmTo}</div>` +
+        (wx ? `<div style="font-size:11px;">${Math.round(wx.temp)}° · ${wxInfo[1]} ${wxInfo[0]}</div>` : '') +
+        `<div style="font-size:11px;margin-top:5px;font-weight:600;">${SEVERITY_LABELS[sev]}</div>`
+      );
+    });
+    if(state.geometryLoaded){
+      SECTORS.forEach(s=>{
+        const leg = state.legGeometry[s.id];
+        const line = mapSegments[s.id];
+        if(leg && leg.coords && line){
+          line.setLatLngs(leg.coords);
+        }
+      });
+    }
+  }
+
+  async function loadRouteGeometry(){
+    try{
+      state.legGeometry = await fetchAllLegGeometries();
+      state.geometryLoaded = true;
+      updateMapColors();
+      if(state.currentSector) renderZoomMap(state.currentSector);
+    }catch(e){
+      // leave straight-line fallbacks in place
+    }
+  }
+
+  // ---------------- Zoomed per-sector map ----------------
+  let zoomMap = null;
+  let zoomLine = null;
+  let zoomReportMarkers = [];
+
+  function renderZoomMap(sector){
+    if(typeof L === 'undefined') return;
+    const container = document.getElementById('sectorMap');
+    if(!container) return;
+
+    if(zoomMap){ zoomMap.remove(); zoomMap = null; zoomReportMarkers = []; }
+
+    zoomMap = L.map('sectorMap', { attributionControl:true, scrollWheelZoom:false, zoomControl:true });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution:'&copy; OpenStreetMap &copy; CARTO', subdomains:'abcd', maxZoom:17
+    }).addTo(zoomMap);
+
+    const leg = state.legGeometry[sector.id];
+    const coords = (leg && leg.coords) ? leg.coords : [[sector.fromLoc.lat,sector.fromLoc.lon],[sector.toLoc.lat,sector.toLoc.lon]];
+    const sev = combinedSeverity(sector.id);
+    zoomLine = L.polyline(coords, { color: SEVERITY_COLORS[sev], weight:5, opacity:0.9 }).addTo(zoomMap);
+    zoomMap.fitBounds(zoomLine.getBounds(), { padding:[24,24] });
+
+    [sector.fromLoc, sector.toLoc].forEach(loc=>{
+      L.circleMarker([loc.lat, loc.lon], { radius:5, color:'#0E1B1F', weight:1.5, fillColor:'#A9BDBA', fillOpacity:1 })
+        .bindPopup(`<b>${loc.name}</b><br><span style="font-size:10.5px;">KM ${loc.km}</span>`)
+        .addTo(zoomMap);
+    });
+
+    (state.detailReports||[]).forEach(r=>{
+      if(typeof r.lat !== 'number' || typeof r.lon !== 'number') return;
+      const rsev = reportSeverity(r);
+      const marker = L.circleMarker([r.lat, r.lon], { radius:7, color:'#0E1B1F', weight:2, fillColor:SEVERITY_COLORS[rsev], fillOpacity:1 });
+      marker.bindPopup(`<b>KM ${r.km ?? '—'}</b><br>${STATUS[r.condition]?.label || ''}<br><span style="font-size:10.5px;">${fmtDateTime(r.ts)}</span>`);
+      marker.addTo(zoomMap);
+      zoomReportMarkers.push(marker);
+    });
+  }
+
+  function renderRegionPicker(){
+    $('#routeEyebrow').textContent = 'La ruta, de norte a sur';
+    $('#regionBackRow').classList.add('hidden');
+    const wrap = $('#routeSpine');
+    wrap.innerHTML = '';
+    REGIONS.forEach(region=>{
+      const secs = regionSectors(region);
+      let sev = 'green';
+      secs.forEach(s => { sev = worseSev(sev, combinedSeverity(s.id)); });
+      const kmFrom = secs[0].kmFrom, kmTo = secs[secs.length-1].kmTo;
+      const card = el('button','region-card');
+      card.dataset.region = region.id;
+      card.innerHTML = `
+        <div class="region-top">
+          <span class="region-dot dot-${sev}"></span>
+          <div>
+            <div class="region-name">${region.name}</div>
+            <div class="region-desc">${region.desc}</div>
+          </div>
+        </div>
+        <div class="region-meta">KM ${kmFrom} – ${kmTo} · ${secs.length} sectores</div>
+      `;
+      wrap.appendChild(card);
+    });
+    wrap.querySelectorAll('.region-card').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        state.currentRegion = REGIONS.find(r => r.id === btn.dataset.region);
+        renderOverview();
+      });
+    });
+  }
+
+  function renderRegionSectorList(){
+    const region = state.currentRegion;
+    $('#routeEyebrow').textContent = `Zona ${region.name}`;
+    $('#regionBackRow').classList.remove('hidden');
+    const wrap = $('#routeSpine');
+    wrap.innerHTML = '';
+    regionSectors(region).forEach(s => {
+      const report = state.latestReport[s.id];
+      const sev = combinedSeverity(s.id);
+      const dotCls = `dot-${sev}`;
+      const wx = state.overviewWx[s.fromLoc.id];
+      const wxInfo = wx ? wmo(wx.code) : null;
+
+      const advItems = advisoriesForSector(s.id);
+      const advCats = Array.from(new Set(advItems.map(i=>i.category)));
+      const flagsHtml = advCats.length
+        ? `<div class="stop-flags">${advCats.map(c=>`<span title="${ADV_CATS[c].label}">${ADV_CATS[c].icon}</span>`).join('')}</div>`
+        : '';
+
+      const stop = el('div','stop');
+      stop.innerHTML = `
+        <span class="stop-dot ${dotCls}"></span>
+        <button class="stop-card" data-id="${s.id}">
+          <div class="stop-main">
+            <div class="stop-name">${s.name}</div>
+            <div class="stop-km">KM ${s.kmFrom}–${s.kmTo}</div>
+            <div class="stop-status"><span class="txt">${report ? STATUS[report.condition].label + ' · ' + relTime(report.ts) : 'Sin reportes'}</span></div>
+            ${flagsHtml}
+          </div>
+          <div class="stop-right">
+            ${wx ? `<div class="stop-temp">${Math.round(wx.temp)}°</div><div class="stop-wx">${wxInfo[1]}</div>` : `<div class="stop-temp mono" style="font-size:13px;color:var(--mist-500);">…</div>`}
+          </div>
+        </button>
+      `;
+      wrap.appendChild(stop);
+    });
+    wrap.querySelectorAll('.stop-card').forEach(btn=>{
+      btn.addEventListener('click', ()=> openDetail(btn.dataset.id));
+    });
+  }
+
+  function renderOverview(){
+    if(state.currentRegion){
+      renderRegionSectorList();
+    }else{
+      renderRegionPicker();
+    }
+  }
+
+  function renderAdvisoryList(){
+    const wrap = $('#advisoryList');
+    if(!state.advisories.length){
+      wrap.innerHTML = `<div class="empty-state">Sin avisos oficiales publicados todavía.</div>`;
+      return;
+    }
+    wrap.innerHTML = '';
+    state.advisories.forEach(bulletin=>{
+      const expanded = state.advisoryExpanded.has(bulletin.id);
+      const expired = isAdvisoryExpired(bulletin);
+      const hoursOld = (Date.now() - new Date(bulletin.ts).getTime()) / 3600000;
+      const staleAuto = !expired && hoursOld >= 48;
+      const catsInBulletin = Array.from(new Set((bulletin.items||[]).map(i=>i.category)));
+      const card = el('div', 'adv-card' + (expired ? ' is-history' : ''));
+      card.innerHTML = `
+        <div class="adv-card-top" data-id="${bulletin.id}">
+          <div>
+            <div class="src">${bulletin.source ? escapeHtml(bulletin.source) : 'Aviso de la ruta'}${expired ? ' · VENCIDO' : ''}</div>
+            <div class="meta">${fmtDateTime(bulletin.ts)}${bulletin.expiry ? ' · vigente hasta ' + bulletin.expiry : ''}</div>
+            <div class="adv-summary">${catsInBulletin.map(c=>ADV_CATS[c].icon+' '+ADV_CATS[c].label).join(' · ') || (bulletin.items||[]).length + ' sector(es) mencionados'}</div>
+            ${staleAuto ? `<div class="status-stale">⏱ Publicado hace ${Math.floor(hoursOld)} h — confirma si sigue vigente</div>` : ''}
+          </div>
+          <div class="chev">${expanded ? '▲' : '▼'}</div>
+        </div>
+        <div class="adv-items ${expanded ? '' : 'hidden'}">
+          ${(bulletin.items||[]).map(it=>`
+            <div class="adv-item">
+              <span class="adv-badge">
+                <span class="dot dot-${ADV_CATS[it.category].cls}"></span>${ADV_CATS[it.category].label}
+              </span>
+              <div class="adv-item-text"></div>
+              ${it.affected && it.affected.length ? `<div class="adv-item-stops">📍 ${it.affected.map(id=>sectorById(id)?.name).filter(Boolean).join(' · ')}</div>` : ''}
+            </div>
+          `).join('') || '<div style="font-size:12.5px;color:var(--mist-500);">No se detectaron sectores específicos en el texto.</div>'}
+          <div class="adv-raw hidden" id="raw-${bulletin.id}"></div>
+          <div class="adv-actions">
+            <button data-raw="${bulletin.id}">ver texto original</button>
+            <button class="danger" data-remove="${bulletin.id}">marcar como vencido</button>
+          </div>
+        </div>
+      `;
+      card.querySelectorAll('.adv-item-text').forEach((elx, idx)=>{ elx.textContent = bulletin.items[idx].text; });
+      const rawBox = card.querySelector(`#raw-${bulletin.id}`);
+      if(rawBox) rawBox.textContent = bulletin.rawText;
+      wrap.appendChild(card);
+    });
+
+    wrap.querySelectorAll('.adv-card-top').forEach(top=>{
+      top.addEventListener('click', ()=>{
+        const id = top.dataset.id;
+        if(state.advisoryExpanded.has(id)) state.advisoryExpanded.delete(id);
+        else state.advisoryExpanded.add(id);
+        renderAdvisoryList();
+      });
+    });
+    wrap.querySelectorAll('[data-raw]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const box = document.getElementById('raw-'+btn.dataset.raw);
+        box.classList.toggle('hidden');
+      });
+    });
+    wrap.querySelectorAll('[data-remove]').forEach(btn=>{
+      btn.addEventListener('click', async (e)=>{
+        e.stopPropagation();
+        btn.textContent = 'quitando…';
+        state.advisories = await removeAdvisory(btn.dataset.remove);
+        renderAdvisoryList();
+        renderOverview();
+        updateMapColors();
+        if(state.currentSector) renderDetailAdvisories();
+      });
+    });
+  }
+
+  function renderDetailAdvisories(){
+    const wrap = $('#detailAdvisories');
+    if(!state.currentSector){ wrap.innerHTML=''; return; }
+    const items = advisoriesForSector(state.currentSector.id);
+    if(!items.length){ wrap.innerHTML = ''; return; }
+    wrap.innerHTML = `<div class="section-eyebrow" style="margin-top:0;">Avisos oficiales para este tramo</div>` +
+      items.map((it, idx)=>`
+        <div class="adv-mini">
+          <span class="adv-badge" style="border-color:var(--line-200);">
+            <span class="dot dot-${ADV_CATS[it.category].cls}"></span>${ADV_CATS[it.category].label}
+          </span>
+          <div class="adv-item-text" style="margin-top:6px;"></div>
+          <div class="report-time" style="margin-top:8px;">${it.source ? escapeHtml(it.source)+' · ' : ''}${fmtDateTime(it.ts)}</div>
+          <div class="adv-raw hidden" data-detailrawbox="${idx}"></div>
+          <div class="adv-actions">
+            <button type="button" data-detailraw="${idx}">ver texto original</button>
+            <button type="button" class="danger" data-detailremove="${it.bulletinId}">marcar como vencido</button>
+          </div>
+        </div>
+      `).join('');
+    wrap.querySelectorAll('.adv-item-text').forEach((elx, idx)=>{ elx.textContent = items[idx].text; });
+    wrap.querySelectorAll('[data-detailrawbox]').forEach((box, idx)=>{ box.textContent = items[idx].rawText || ''; });
+
+    wrap.querySelectorAll('[data-detailraw]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const box = wrap.querySelector(`[data-detailrawbox="${btn.dataset.detailraw}"]`);
+        if(box) box.classList.toggle('hidden');
+      });
+    });
+    wrap.querySelectorAll('[data-detailremove]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        btn.disabled = true;
+        btn.textContent = 'quitando…';
+        try{
+          state.advisories = await removeAdvisory(btn.dataset.detailremove);
+          renderDetailAdvisories();
+          renderAdvisoryList();
+          renderOverview();
+          updateMapColors();
+        }catch(e){
+          btn.disabled = false;
+          btn.textContent = 'marcar como vencido';
+        }
+      });
+    });
+  }
+
+  // ---------------- Rendering: Detail ----------------
+  async function openDetail(sectorId){
+    const sector = sectorById(sectorId);
+    if(!sector) return;
+    state.currentSector = sector;
+    $('#viewOverview').classList.add('hidden');
+    $('#viewDetail').classList.remove('hidden');
+    $('#detailName').textContent = sector.name;
+    $('#detailKm').textContent = `KM ${sector.kmFrom} – ${sector.kmTo} DE LA RUTA 7`;
+    window.scrollTo(0,0);
+
+    $('#wxNowWrap').innerHTML = `<div class="empty-state">Cargando clima…</div>`;
+    $('#fcStrip').innerHTML = '';
+    $('#reportsFeed').innerHTML = `<div class="empty-state">Cargando reportes…</div>`;
+    renderStatusBanner(null);
+
+    const [reports, forecast] = await Promise.all([
+      getReports(sector.id).catch(()=>[]),
+      fetchLocationForecast(sector.fromLoc).catch(()=>null)
+    ]);
+
+    state.detailReports = reports;
+    state.latestReport[sector.id] = reports[0] || null;
+    renderStatusBanner(reports[0] || null);
+    renderReports(reports);
+    renderDetailAdvisories();
+    updateMapColors();
+    renderZoomMap(sector);
+
+    if(forecast){
+      state.detailForecast = forecast;
+      renderWxNow(forecast);
+      renderForecastStrip(forecast);
+    }else{
+      $('#wxNowWrap').innerHTML = `<div class="empty-state">No se pudo cargar el clima. <button class="btn-ghost" id="retryWx">Reintentar</button></div>`;
+      const retry = document.getElementById('retryWx');
+      if(retry) retry.addEventListener('click', async ()=>{
+        const f = await fetchLocationForecast(sector.fromLoc).catch(()=>null);
+        if(f){ state.detailForecast=f; renderWxNow(f); renderForecastStrip(f); }
+      });
+    }
+  }
+
+  function renderStatusBanner(report){
+    const dot = $('#statusDot');
+    const label = $('#statusLabel');
+    const since = $('#statusSince');
+    const banner = $('#statusBanner');
+    const stale = $('#statusStale');
+    const actions = $('#statusActions');
+    if(report){
+      const info = STATUS[report.condition];
+      banner.className = `status-banner bg-${info.cls}`;
+      dot.className = `dot dot-${info.cls}`;
+      label.textContent = info.label;
+      since.textContent = `Último reporte KM ${report.km ?? '—'} · ${relTime(report.ts)} · ${fmtDateTime(report.ts)}`;
+      const hoursOld = (Date.now() - new Date(report.ts).getTime()) / 3600000;
+      if(hoursOld >= 6){
+        stale.textContent = `⏱ Este reporte tiene ${Math.floor(hoursOld)} h — confirma si sigue así`;
+        stale.classList.remove('hidden');
+      }else{
+        stale.classList.add('hidden');
+      }
+      actions.classList.remove('hidden');
+    }else{
+      banner.className = 'status-banner bg-neutral';
+      dot.className = 'dot dot-neutral';
+      label.textContent = 'Sin reportes recientes';
+      since.textContent = 'Sé el primero en reportar el estado de este tramo';
+      stale.classList.add('hidden');
+      actions.classList.add('hidden');
+    }
+  }
+
+  function renderWxNow(fc){
+    const c = fc.current;
+    const info = wmo(c.weather_code);
+    $('#wxNowWrap').innerHTML = `
+      <div class="wx-now">
+        <div>
+          <div class="temp">${Math.round(c.temperature_2m)}°C</div>
+          <div class="desc">${info[0]}</div>
+        </div>
+        <div class="glyph">${info[1]}</div>
+      </div>
+      <div class="wx-meta">
+        <div>Viento<span>${Math.round(c.wind_speed_10m)} km/h</span></div>
+        <div>Ráfagas<span>${Math.round(c.wind_gusts_10m)} km/h</span></div>
+        <div>Humedad<span>${c.relative_humidity_2m}%</span></div>
+        <div>Precipitación<span>${c.precipitation} mm</span></div>
+      </div>
+    `;
+  }
+
+  function renderForecastStrip(fc){
+    const d = fc.daily;
+    const strip = $('#fcStrip');
+    strip.innerHTML = '';
+    for(let i=0;i<d.time.length;i++){
+      const date = new Date(d.time[i] + 'T00:00:00');
+      const info = wmo(d.weather_code[i]);
+      const card = el('div','fc-day');
+      card.innerHTML = `
+        <div class="d">${i===0 ? 'Hoy' : DOW[date.getDay()]}</div>
+        <div class="g">${info[1]}</div>
+        <div class="hi">${Math.round(d.temperature_2m_max[i])}°</div>
+        <div class="lo">${Math.round(d.temperature_2m_min[i])}°</div>
+        <div class="pr">💧 ${Math.round(d.precipitation_sum[i])}mm</div>
+      `;
+      strip.appendChild(card);
+    }
+  }
+
+  function renderReports(reports){
+    const feed = $('#reportsFeed');
+    if(!reports.length){
+      feed.innerHTML = `<div class="empty-state">Todavía no hay reportes para este tramo.<br>Ayuda a otros viajeros contando cómo está el camino.</div>`;
+      return;
+    }
+    feed.innerHTML = '';
+    reports.forEach((r, idx)=>{
+      const info = STATUS[r.condition] || STATUS.bueno;
+      const card = el('div', 'report-card' + (idx === 0 ? '' : ' is-history'));
+      card.innerHTML = `
+        ${idx === 0 ? '<div class="report-latest-tag">Estado actual</div>' : ''}
+        <div class="report-top">
+          <span class="report-badge" style="background:transparent;border:1px solid var(--line-200);">
+            <span class="dot dot-${info.cls}"></span>${info.label}
+          </span>
+          <span class="report-time">KM ${r.km ?? '—'} · ${fmtDateTime(r.ts)}</span>
+        </div>
+        <div class="report-text"></div>
+        ${r.tags && r.tags.length ? `<div class="report-tags">${r.tags.map(t=>`<span>${t}</span>`).join('')}</div>` : ''}
+        ${r.photo ? `<div class="report-photo"><img src="${r.photo}" alt="Foto del estado de la ruta"></div>` : ''}
+        <div class="report-author">— ${r.author ? escapeHtml(r.author) : 'Viajero anónimo'}</div>
+      `;
+      card.querySelector('.report-text').textContent = r.text;
+      const img = card.querySelector('.report-photo img');
+      if(img) img.addEventListener('click', ()=> openLightbox(r.photo));
+      feed.appendChild(card);
+    });
+  }
+
+  function escapeHtml(s){
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function openLightbox(src){
+    const lb = $('#lightbox');
+    lb.innerHTML = '';
+    const img = el('img'); img.src = src;
+    lb.appendChild(img);
+    lb.classList.remove('hidden');
+    lb.addEventListener('click', ()=> lb.classList.add('hidden'), {once:true});
+  }
+
+  // ---------------- Init / sync ----------------
+  async function refreshOverviewData(){
+    $('#syncDot').classList.add('loading');
+    $('#syncText').textContent = 'actualizando…';
+    try{
+      const [_, results, advisories] = await Promise.all([
+        fetchOverviewWeather(),
+        Promise.all(SECTORS.map(s => getReports(s.id).then(list=>[s.id, list[0]||null]).catch(()=>[s.id,null]))),
+        getAdvisories()
+      ]);
+      results.forEach(([id, r]) => { state.latestReport[id] = r; });
+      state.advisories = advisories;
+      renderOverview();
+      renderAdvisoryList();
+      updateMapColors();
+      $('#syncText').textContent = 'actualizado ' + new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+    }catch(e){
+      $('#syncText').textContent = 'sin conexión al clima';
+    }finally{
+      $('#syncDot').classList.remove('loading');
+    }
+  }
+
+  $('#refreshBtn').addEventListener('click', async ()=>{
+    if(state.currentSector){
+      openDetail(state.currentSector.id);
+    }else{
+      refreshOverviewData();
+    }
+  });
+
+  $('#backBtn').addEventListener('click', ()=>{
+    state.currentSector = null;
+    $('#viewDetail').classList.add('hidden');
+    $('#viewOverview').classList.remove('hidden');
+    renderOverview();
+  });
+
+  $('#regionBackBtn').addEventListener('click', ()=>{
+    state.currentRegion = null;
+    renderOverview();
+  });
+
+  $('#updateStatusBtn').addEventListener('click', ()=>{
+    if(state.currentSector) openSheet(Math.round((state.currentSector.kmFrom + state.currentSector.kmTo)/2));
+  });
+
+  $('#confirmSameBtn').addEventListener('click', async ()=>{
+    if(!state.currentSector) return;
+    const sectorId = state.currentSector.id;
+    const last = state.latestReport[sectorId];
+    if(!last) return;
+    const btn = $('#confirmSameBtn');
+    btn.disabled = true;
+    btn.textContent = 'Confirmando…';
+    try{
+      const km = (typeof last.km === 'number') ? last.km : Math.round((state.currentSector.kmFrom + state.currentSector.kmTo)/2);
+      const pos = interpolateKm(km);
+      const report = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+        ts: new Date().toISOString(),
+        condition: last.condition,
+        tags: last.tags || [],
+        text: 'Confirmado: la condición sigue igual que el reporte anterior.',
+        photo: null,
+        author: '',
+        km, lat: pos.lat, lon: pos.lon
+      };
+      const updated = await saveReport(sectorId, report);
+      state.latestReport[sectorId] = updated[0];
+      state.detailReports = updated;
+      renderReports(updated);
+      renderStatusBanner(updated[0]);
+      updateMapColors();
+      renderZoomMap(state.currentSector);
+      renderOverview();
+    }catch(e){
+      // best-effort quick confirm; person can just try again
+    }finally{
+      btn.disabled = false;
+      btn.textContent = '✓ Sigue así';
+    }
+  });
+
+  // ---------------- Report form ----------------
+  function buildCondGrid(){
+    const grid = $('#condGrid');
+    grid.innerHTML = '';
+    Object.entries(STATUS).forEach(([key,info])=>{
+      const b = el('button','cond-btn');
+      b.type='button';
+      b.dataset.cond = key;
+      b.innerHTML = `<span class="dot dot-${info.cls}"></span>${info.label}`;
+      if(key === state.selectedCondition) b.classList.add('active');
+      b.addEventListener('click', ()=>{
+        state.selectedCondition = key;
+        grid.querySelectorAll('.cond-btn').forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+      });
+      grid.appendChild(b);
+    });
+  }
+
+  function buildTagGrid(){
+    const grid = $('#tagGrid');
+    grid.innerHTML = '';
+    TAGS.forEach(tag=>{
+      const c = el('button','chip', tag);
+      c.type='button';
+      c.addEventListener('click', ()=>{
+        if(state.selectedTags.has(tag)){ state.selectedTags.delete(tag); c.classList.remove('active'); }
+        else{ state.selectedTags.add(tag); c.classList.add('active'); }
+      });
+      grid.appendChild(c);
+    });
+  }
+
+  function resizeImage(file){
+    return new Promise((resolve,reject)=>{
+      const reader = new FileReader();
+      reader.onload = (e)=>{
+        const img = new Image();
+        img.onload = ()=>{
+          const maxDim = 900;
+          let {width, height} = img;
+          if(width > height && width > maxDim){ height = Math.round(height*maxDim/width); width = maxDim; }
+          else if(height > maxDim){ width = Math.round(width*maxDim/height); height = maxDim; }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img,0,0,width,height);
+          resolve(canvas.toDataURL('image/jpeg', 0.65));
+        };
+        img.onerror = () => reject(new Error('No se pudo leer la imagen'));
+        img.src = e.target.result;
+      };
+      reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  $('#photoInput').addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    try{
+      const dataUrl = await resizeImage(file);
+      state.photoData = dataUrl;
+      const preview = $('#photoPreview');
+      preview.src = dataUrl;
+      preview.classList.remove('hidden');
+    }catch(err){
+      $('#formMsg').textContent = 'No se pudo procesar la foto.';
+      $('#formMsg').className = 'form-msg err';
+    }
+  });
+
+  function updateKmHint(){
+    const val = parseFloat($('#kmInput').value);
+    const hint = $('#kmHint');
+    if(isNaN(val)){ hint.textContent = ''; return; }
+    const clamped = Math.max(0, Math.min(val, ROUTE_KM_MAX));
+    const s = sectorForKm(clamped);
+    hint.textContent = `≈ entre ${s.fromLoc.name} y ${s.toLoc.name}`;
+  }
+  $('#kmInput').addEventListener('input', updateKmHint);
+
+  function openSheet(prefKm){
+    buildCondGrid();
+    buildTagGrid();
+    state.selectedTags.clear();
+    state.selectedCondition = 'bueno';
+    state.photoData = null;
+    $('#photoPreview').classList.add('hidden');
+    $('#photoPreview').src = '';
+    $('#descInput').value = '';
+    $('#authorInput').value = '';
+    $('#formMsg').textContent = '';
+    $('#kmInput').value = (prefKm === undefined || prefKm === null || prefKm === '') ? '' : prefKm;
+    updateKmHint();
+    buildCondGrid();
+    $('#sheetOverlay').classList.remove('hidden');
+  }
+
+  function closeSheet(){
+    $('#sheetOverlay').classList.add('hidden');
+  }
+
+  $('#fabAdd').addEventListener('click', ()=> openSheet(state.currentSector ? Math.round((state.currentSector.kmFrom + state.currentSector.kmTo)/2) : ''));
+  $('#cancelBtn').addEventListener('click', closeSheet);
+  $('#sheetOverlay').addEventListener('click', (e)=>{ if(e.target.id==='sheetOverlay') closeSheet(); });
+
+  $('#reportForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const submitBtn = $('#submitBtn');
+    const msg = $('#formMsg');
+    const kmVal = parseFloat($('#kmInput').value);
+    const text = $('#descInput').value.trim();
+
+    if(isNaN(kmVal) || kmVal < 0 || kmVal > ROUTE_KM_MAX){
+      msg.textContent = `Ingresa un kilómetro válido entre 0 y ${ROUTE_KM_MAX}.`;
+      msg.className = 'form-msg err';
+      return;
+    }
+    if(!text){ msg.textContent='Cuéntanos brevemente el estado del camino.'; msg.className='form-msg err'; return; }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Publicando…';
+    msg.textContent = '';
+
+    const pos = interpolateKm(kmVal);
+    const sectorId = pos.sectorId;
+
+    const report = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+      ts: new Date().toISOString(),
+      condition: state.selectedCondition,
+      tags: Array.from(state.selectedTags),
+      text: text,
+      photo: state.photoData,
+      author: $('#authorInput').value.trim(),
+      km: kmVal,
+      lat: pos.lat,
+      lon: pos.lon
+    };
+
+    try{
+      const updated = await saveReport(sectorId, report);
+      msg.textContent = 'Reporte publicado. ¡Gracias por compartir!';
+      msg.className = 'form-msg ok';
+      state.latestReport[sectorId] = updated[0];
+      if(state.currentSector && state.currentSector.id === sectorId){
+        state.detailReports = updated;
+        renderReports(updated);
+        renderStatusBanner(updated[0]);
+        renderZoomMap(state.currentSector);
+      }
+      updateMapColors();
+      setTimeout(()=>{
+        closeSheet();
+        if(!state.currentSector) renderOverview();
+      }, 700);
+    }catch(err){
+      msg.textContent = 'No se pudo publicar el reporte: ' + (err && err.message ? err.message : 'error desconocido') + '. Intenta nuevamente.';
+      msg.className = 'form-msg err';
+    }finally{
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Publicar reporte';
+    }
+  });
+
+  // ---------------- Advisory paste form ----------------
+  function openAdvSheet(){
+    $('#advSource').value = '';
+    $('#advExpiry').value = '';
+    $('#advText').value = '';
+    $('#advFormMsg').textContent = '';
+    $('#advSheetOverlay').classList.remove('hidden');
+  }
+  function closeAdvSheet(){ $('#advSheetOverlay').classList.add('hidden'); }
+
+  $('#addAdvisoryBtn').addEventListener('click', openAdvSheet);
+  $('#advCancelBtn').addEventListener('click', closeAdvSheet);
+  $('#advSheetOverlay').addEventListener('click', (e)=>{ if(e.target.id==='advSheetOverlay') closeAdvSheet(); });
+
+  $('#advisoryForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const submitBtn = $('#advSubmitBtn');
+    const msg = $('#advFormMsg');
+    const raw = $('#advText').value.trim();
+    if(!raw){ msg.textContent='Pega el texto del aviso primero.'; msg.className='form-msg err'; return; }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Publicando…';
+    msg.textContent = '';
+
+    try{
+      const parsed = parseAdvisoryText(raw);
+      const manualSource = $('#advSource').value.trim();
+      const bulletin = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+        ts: new Date().toISOString(),
+        source: manualSource || parsed.source || '',
+        expiry: $('#advExpiry').value || null,
+        rawText: raw,
+        items: parsed.items
+      };
+      state.advisories = await saveAdvisory(bulletin);
+      const n = parsed.items.length;
+      msg.textContent = n
+        ? `Aviso publicado. Se detectaron ${n} sector(es).`
+        : 'Aviso publicado. No se detectaron sectores específicos — se mostrará el texto completo igualmente.';
+      msg.className = 'form-msg ok';
+      renderAdvisoryList();
+      renderOverview();
+      updateMapColors();
+      if(state.currentSector) renderDetailAdvisories();
+      setTimeout(closeAdvSheet, 900);
+    }catch(err){
+      msg.textContent = 'No se pudo publicar el aviso: ' + (err && err.message ? err.message : 'error desconocido') + '. Intenta nuevamente.';
+      msg.className = 'form-msg err';
+    }finally{
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Publicar aviso';
+    }
+  });
+
+  // ---------------- Boot ----------------
+  renderOverview();
+  renderAdvisoryList();
+  initMap();
+  refreshOverviewData();
+  loadRouteGeometry();
+
+})();
+</script>
+</body>
+</html>
