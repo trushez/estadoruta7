@@ -103,6 +103,14 @@
     padding-right:env(safe-area-inset-right);
     padding-bottom:calc(76px + env(safe-area-inset-bottom));
   }
+  /* While any sheet/lightbox is open, freeze the page behind it — otherwise
+     scrolling the backdrop drags the map (and its layered controls/popups)
+     around behind the modal instead of just closing or scrolling the modal.
+     Locked on <html>, not <body>: since html already has overflow-x:hidden
+     (the horizontal movement lock added earlier), the browser treats html
+     itself — not body — as the element that owns page scrolling, so a
+     body-only overflow:hidden here would have no effect. */
+  html.scroll-locked{overflow-y:hidden;}
   h1,h2,h3,.display{
     font-family:'Barlow Condensed','Work Sans',sans-serif;
     letter-spacing:0.01em;
@@ -389,8 +397,14 @@
     border:1.5px solid var(--line-200);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:12px;
     background:var(--ink-900);
   }
-  #routeMap{width:100%;height:320px;background:#E8E6DF;}
-  #sectorMap{width:100%;height:340px;background:#E8E6DF;}
+  /* Leaflet's own CSS gives its zoom controls and popups z-index up to 1000,
+     and (unlike most of its internals) that isn't scoped to a stacking
+     context Leaflet creates itself — so without this, those controls/popups
+     can render on top of our sheets and lightbox (z-index 50/60) instead of
+     staying behind them. Pinning the map container to z-index:0 contains
+     everything Leaflet draws inside its own local stacking context. */
+  #routeMap{width:100%;height:320px;background:#E8E6DF;position:relative;z-index:0;}
+  #sectorMap{width:100%;height:340px;background:#E8E6DF;position:relative;z-index:0;}
   .map-legend{
     display:flex;align-items:center;gap:16px;padding:12px 14px;font-size:12.5px;color:var(--mist-300);
     border-top:1px solid var(--line-200);flex-wrap:wrap;
@@ -1303,6 +1317,16 @@
     });
   }
 
+  // Any sheet or the lightbox being open should freeze background scroll —
+  // recomputed from current visibility each time, so closing one overlay
+  // while another is still open (e.g. the lightbox opened from inside the
+  // report detail sheet) doesn't prematurely unlock the page.
+  function updateScrollLock(){
+    const anyOpen = [ '#sheetOverlay', '#advSheetOverlay', '#reportDetailOverlay', '#lightbox' ]
+      .some(sel => { const el = document.querySelector(sel); return el && !el.classList.contains('hidden'); });
+    document.documentElement.classList.toggle('scroll-locked', anyOpen);
+  }
+
   function openReportDetail(report){
     const info = STATUS[report.condition] || STATUS.bueno;
     const body = $('#reportDetailBody');
@@ -1322,9 +1346,11 @@
     const img = body.querySelector('.report-photo img');
     if(img) img.addEventListener('click', ()=> openLightbox(report.photo));
     $('#reportDetailOverlay').classList.remove('hidden');
+    updateScrollLock();
   }
   function closeReportDetail(){
     $('#reportDetailOverlay').classList.add('hidden');
+    updateScrollLock();
   }
 
   function renderRegionPicker(){
@@ -1704,7 +1730,8 @@
     const img = el('img'); img.src = src;
     lb.appendChild(img);
     lb.classList.remove('hidden');
-    lb.addEventListener('click', ()=> lb.classList.add('hidden'), {once:true});
+    updateScrollLock();
+    lb.addEventListener('click', ()=>{ lb.classList.add('hidden'); updateScrollLock(); }, {once:true});
   }
 
   // ---------------- Init / sync ----------------
@@ -1900,10 +1927,12 @@
     updateKmHint();
     buildCondGrid();
     $('#sheetOverlay').classList.remove('hidden');
+    updateScrollLock();
   }
 
   function closeSheet(){
     $('#sheetOverlay').classList.add('hidden');
+    updateScrollLock();
   }
 
   $('#fabAdd').addEventListener('click', ()=> openSheet(state.currentSector ? Math.round((state.currentSector.kmFrom + state.currentSector.kmTo)/2) : ''));
@@ -1976,8 +2005,9 @@
     $('#advText').value = '';
     $('#advFormMsg').textContent = '';
     $('#advSheetOverlay').classList.remove('hidden');
+    updateScrollLock();
   }
-  function closeAdvSheet(){ $('#advSheetOverlay').classList.add('hidden'); }
+  function closeAdvSheet(){ $('#advSheetOverlay').classList.add('hidden'); updateScrollLock(); }
 
   $('#addAdvisoryBtn').addEventListener('click', openAdvSheet);
   $('#advCancelBtn').addEventListener('click', closeAdvSheet);

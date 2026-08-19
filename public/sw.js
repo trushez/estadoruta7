@@ -9,7 +9,7 @@
 //     page's own JS already handles fetch failures gracefully.
 //
 // Bump CACHE_VERSION whenever shell assets change so old caches get cleared.
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = 'carretera-austral-' + CACHE_VERSION;
 
 const SHELL_ASSETS = [
