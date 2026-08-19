@@ -2,8 +2,9 @@
 
 A small Express server (`server.js`) that serves the app (`public/index.html`)
 and stores community reports + official advisories as JSON files under
-`data/`, with uploaded photos saved to `uploads/`. No external database is
-required.
+`data/`, with uploaded photos saved to `data/uploads/`. Everything lives
+under `data/` on purpose, so a single persistent volume mounted there covers
+reports, advisories, and photos together. No external database is required.
 
 ## Run it locally
 
@@ -21,10 +22,12 @@ Then open http://localhost:3000
 2. In Railway, "New Project" → "Deploy from GitHub repo" and pick it.
    Railway auto-detects Node.js from `package.json` and runs `npm start`.
 3. **Add a Volume** (Railway dashboard → your service → "Volumes" → "New
-   Volume") mounted at `/app/data` and another at `/app/uploads`, or a single
-   volume mounted at `/app` covering both. Without a volume, every redeploy
-   wipes stored reports/advisories, because Railway's filesystem is otherwise
-   ephemeral.
+   Volume") mounted at `/app/data`. That one volume is enough — reports,
+   advisories, and uploaded photos all live under `data/`, so nothing else
+   needs its own mount. Without a volume, every redeploy (and Railway can
+   redeploy or restart the container on its own — a crash, a sleep/wake
+   cycle, a platform update) wipes everything stored on disk, because
+   Railway's filesystem is otherwise ephemeral.
 4. Railway assigns a public URL automatically (Settings → "Generate Domain").
    Point your own domain at it if you have one (Settings → "Custom Domain").
 
@@ -60,9 +63,9 @@ so it survives reboots and restarts on crash, and put Nginx in front for TLS.
   `readJson`/`writeJsonAtomic` calls in `server.js` for a real database — the
   API shape (`GET/POST /api/reports/:sectorId`, `GET/POST /api/advisories`,
   `DELETE /api/advisories/:id`) doesn't need to change.
-- **Photos** are capped at 6MB decoded and saved under `uploads/`, served
-  statically. The client already downsizes photos before upload, so this cap
-  is a safety net, not the normal case.
+- **Photos** are capped at 6MB decoded and saved under `data/uploads/`,
+  served statically at `/uploads/<file>`. The client already downsizes
+  photos before upload, so this cap is a safety net, not the normal case.
 - **Route/weather data** (`LOCATIONS`, `SECTORS` in `public/index.html`) is
   compiled from published route descriptions, not surveyed Vialidad data —
   see the comment above the `LOCATIONS` array if you ever need to adjust it.

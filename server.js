@@ -1,10 +1,13 @@
 // Carretera Austral — backend
 // A small Express server that (1) serves the static app from /public and
-// (2) persists community reports and official advisories as JSON files on
-// disk under /data, plus saved report photos under /uploads. No external
-// database is required — this is intentionally simple so it can run on a
-// small Railway service or a Hostinger Node.js/VPS plan with zero extra
-// setup beyond `npm install && npm start`.
+// (2) persists community reports, official advisories, and uploaded report
+// photos all under /data (reports/advisories as JSON, photos in
+// data/uploads/). Keeping everything under one directory means a single
+// persistent volume mounted at /data covers all of it — no separate volume
+// needed for photos. No external database is required — this is
+// intentionally simple so it can run on a small Railway service or a
+// Hostinger Node.js/VPS plan with zero extra setup beyond
+// `npm install && npm start`.
 
 const express = require('express');
 const fs = require('fs');
@@ -17,7 +20,12 @@ const PORT = process.env.PORT || 3000;
 const DATA_DIR = path.join(__dirname, 'data');
 const REPORTS_DIR = path.join(DATA_DIR, 'reports');
 const ADVISORIES_FILE = path.join(DATA_DIR, 'advisories.json');
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
+// Uploaded photos live under data/ (not a separate top-level uploads/) so
+// that whichever persistent volume is mounted at /data — the one already
+// set up for reports/advisories — automatically covers photos too, with no
+// second volume to configure. The public URL is still /uploads/<file>,
+// only the on-disk location moved.
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 
 [DATA_DIR, REPORTS_DIR, UPLOADS_DIR].forEach(d => {
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
