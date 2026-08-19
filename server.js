@@ -30,7 +30,21 @@ app.set('trust proxy', true);
 
 app.use(express.json({ limit: '12mb' }));
 app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '30d' }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders(res, filePath) {
+    // Correct MIME type for the web app manifest (some static servers/CDNs
+    // guess "application/octet-stream" for .webmanifest otherwise).
+    if (filePath.endsWith('.webmanifest')) {
+      res.setHeader('Content-Type', 'application/manifest+json');
+    }
+    // Never let the service worker script itself get cached stale — browsers
+    // already re-check it periodically, but this avoids CDNs/proxies pinning
+    // an old version and blocking updates.
+    if (filePath.endsWith(path.sep + 'sw.js') || filePath.endsWith('/sw.js')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  }
+}));
 
 // ---------- helpers ----------
 function safeSectorId(id) {
