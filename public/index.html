@@ -328,6 +328,9 @@
   .report-photo{margin-top:11px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--line-200);}
   .report-photo img{width:100%;display:block;max-height:280px;object-fit:cover;cursor:zoom-in;}
   .report-author{font-size:12.5px;color:var(--mist-500);margin-top:9px;}
+  .report-actions{display:flex;justify-content:flex-end;margin-top:11px;}
+  .report-actions button{font-size:13.5px;color:var(--mist-500);background:none;border:none;padding:8px 2px;font-weight:600;}
+  .report-actions button.danger{color:var(--rust-300);}
   .empty-state{
     text-align:center;padding:36px 16px;color:var(--mist-500);font-size:15px;
     border:1.5px dashed var(--line-300);border-radius:var(--radius-md);
@@ -387,7 +390,7 @@
     background:var(--ink-900);
   }
   #routeMap{width:100%;height:320px;background:#E8E6DF;}
-  #sectorMap{width:100%;height:260px;background:#E8E6DF;}
+  #sectorMap{width:100%;height:340px;background:#E8E6DF;}
   .map-legend{
     display:flex;align-items:center;gap:16px;padding:12px 14px;font-size:12.5px;color:var(--mist-300);
     border-top:1px solid var(--line-200);flex-wrap:wrap;
@@ -647,6 +650,18 @@
       </div>
       <div class="form-msg" id="advFormMsg"></div>
     </form>
+  </div>
+</div>
+
+<!-- ===================== REPORT DETAIL SHEET ===================== -->
+<div class="sheet-overlay hidden" id="reportDetailOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>Detalle del reporte</h2>
+    <div id="reportDetailBody"></div>
+    <div class="sheet-actions">
+      <button type="button" class="btn" id="reportDetailCloseBtn" style="flex:1;">Cerrar</button>
+    </div>
   </div>
 </div>
 
@@ -1108,6 +1123,13 @@
     }
     return await res.json();
   }
+  async function removeReport(sectorId, reportId){
+    try{
+      const res = await fetch(`/api/reports/${encodeURIComponent(sectorId)}/${encodeURIComponent(reportId)}`, { method: 'DELETE' });
+      if(!res.ok) return state.detailReports;
+      return await res.json();
+    }catch(e){ return state.detailReports; }
+  }
   async function getAdvisories(){
     try{
       const res = await fetch('/api/advisories');
@@ -1271,10 +1293,38 @@
       if(typeof r.lat !== 'number' || typeof r.lon !== 'number') return;
       const rsev = reportSeverity(r);
       const marker = L.circleMarker([r.lat, r.lon], { radius:7, color:'#0E1B1F', weight:2, fillColor:SEVERITY_COLORS[rsev], fillOpacity:1 });
-      marker.bindPopup(`<b>KM ${r.km ?? '—'}</b><br>${STATUS[r.condition]?.label || ''}<br><span style="font-size:10.5px;">${fmtDateTime(r.ts)}</span>`);
+      // A tiny in-map popup can't fit a full report (text + tags + photo) without
+      // getting clipped by the map's own bounds, especially near the top edge —
+      // so tapping a report dot opens the full detail as a bottom sheet instead,
+      // same pattern used for the report/advisory forms elsewhere in the app.
+      marker.on('click', ()=> openReportDetail(r));
       marker.addTo(zoomMap);
       zoomReportMarkers.push(marker);
     });
+  }
+
+  function openReportDetail(report){
+    const info = STATUS[report.condition] || STATUS.bueno;
+    const body = $('#reportDetailBody');
+    body.innerHTML = `
+      <div class="report-top">
+        <span class="report-badge" style="background:transparent;border:1px solid var(--line-200);">
+          <span class="dot dot-${info.cls}"></span>${info.label}
+        </span>
+        <span class="report-time">KM ${report.km ?? '—'} · ${fmtDateTime(report.ts)}</span>
+      </div>
+      <div class="report-text" style="margin-top:11px;"></div>
+      ${report.tags && report.tags.length ? `<div class="report-tags">${report.tags.map(t=>`<span>${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+      ${report.photo ? `<div class="report-photo" style="margin-top:14px;"><img src="${report.photo}" alt="Foto del estado de la ruta"></div>` : ''}
+      <div class="report-author" style="margin-top:12px;">— ${report.author ? escapeHtml(report.author) : 'Viajero anónimo'}</div>
+    `;
+    body.querySelector('.report-text').textContent = report.text;
+    const img = body.querySelector('.report-photo img');
+    if(img) img.addEventListener('click', ()=> openLightbox(report.photo));
+    $('#reportDetailOverlay').classList.remove('hidden');
+  }
+  function closeReportDetail(){
+    $('#reportDetailOverlay').classList.add('hidden');
   }
 
   function renderRegionPicker(){
@@ -1615,10 +1665,29 @@
         ${r.tags && r.tags.length ? `<div class="report-tags">${r.tags.map(t=>`<span>${t}</span>`).join('')}</div>` : ''}
         ${r.photo ? `<div class="report-photo"><img src="${r.photo}" alt="Foto del estado de la ruta"></div>` : ''}
         <div class="report-author">— ${r.author ? escapeHtml(r.author) : 'Viajero anónimo'}</div>
+        <div class="report-actions">
+          <button type="button" class="danger" data-removereport="${r.id}">eliminar reporte</button>
+        </div>
       `;
       card.querySelector('.report-text').textContent = r.text;
       const img = card.querySelector('.report-photo img');
       if(img) img.addEventListener('click', ()=> openLightbox(r.photo));
+      const delBtn = card.querySelector('[data-removereport]');
+      if(delBtn) delBtn.addEventListener('click', async ()=>{
+        if(!confirm('¿Eliminar este reporte? Esta acción no se puede deshacer.')) return;
+        delBtn.disabled = true;
+        delBtn.textContent = 'eliminando…';
+        const sectorId = state.currentSector ? state.currentSector.id : null;
+        if(!sectorId){ delBtn.disabled = false; delBtn.textContent = 'eliminar reporte'; return; }
+        const updated = await removeReport(sectorId, r.id);
+        state.detailReports = updated;
+        state.latestReport[sectorId] = updated[0] || null;
+        renderReports(updated);
+        renderStatusBanner(updated[0] || null);
+        renderZoomMap(state.currentSector);
+        renderOverview();
+        updateMapColors();
+      });
       feed.appendChild(card);
     });
   }
@@ -1913,6 +1982,9 @@
   $('#addAdvisoryBtn').addEventListener('click', openAdvSheet);
   $('#advCancelBtn').addEventListener('click', closeAdvSheet);
   $('#advSheetOverlay').addEventListener('click', (e)=>{ if(e.target.id==='advSheetOverlay') closeAdvSheet(); });
+
+  $('#reportDetailCloseBtn').addEventListener('click', closeReportDetail);
+  $('#reportDetailOverlay').addEventListener('click', (e)=>{ if(e.target.id==='reportDetailOverlay') closeReportDetail(); });
 
   $('#advisoryForm').addEventListener('submit', async (e)=>{
     e.preventDefault();
