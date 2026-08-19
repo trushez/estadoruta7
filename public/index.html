@@ -1208,11 +1208,13 @@
     return await res.json();
   }
   async function removeReport(sectorId, reportId){
-    try{
-      const res = await fetch(`/api/reports/${encodeURIComponent(sectorId)}/${encodeURIComponent(reportId)}`, { method: 'DELETE' });
-      if(!res.ok) return state.detailReports;
-      return await res.json();
-    }catch(e){ return state.detailReports; }
+    // Deliberately does NOT swallow failures into a fallback value — a caller
+    // that can't tell "deleted" from "the request failed" ends up looking
+    // like it did nothing (stuck "eliminando…" button, unchanged report),
+    // which is worse than surfacing the error.
+    const res = await fetch(`/api/reports/${encodeURIComponent(sectorId)}/${encodeURIComponent(reportId)}`, { method: 'DELETE' });
+    if(!res.ok) throw new Error('No se pudo eliminar el reporte (' + res.status + ').');
+    return await res.json();
   }
   async function getAdvisories(){
     try{
@@ -1685,7 +1687,14 @@
     const tapHint = $('#statusTapHint');
     const actions = $('#statusActions');
     const deleteRow = $('#statusDeleteRow');
+    const deleteBtn = $('#statusDeleteBtn');
     currentBannerReport = report;
+    // Belt-and-suspenders: #statusDeleteBtn is static markup this function
+    // only shows/hides, not a fresh element per render, so make sure it's
+    // never left stuck disabled/"eliminando…" from a previous delete no
+    // matter which code path got us here.
+    deleteBtn.disabled = false;
+    deleteBtn.textContent = 'eliminar reporte';
     if(report){
       const info = STATUS[report.condition];
       banner.className = `status-banner bg-${info.cls}`;
@@ -1764,19 +1773,26 @@
   // that shows report data for the current sector. Returns true on success
   // so callers can restore a disabled button's label if the user cancels
   // the confirm dialog or the delete request itself fails.
+  // Returns 'ok' | 'cancelled' | 'error' rather than a boolean, so callers can
+  // tell "user backed out" apart from "the delete actually failed" and react
+  // differently (silently re-enable the button vs. tell the person it failed).
   async function deleteReportWithConfirm(reportId){
-    if(!confirm('¿Eliminar este reporte? Esta acción no se puede deshacer.')) return false;
+    if(!confirm('¿Eliminar este reporte? Esta acción no se puede deshacer.')) return 'cancelled';
     const sectorId = state.currentSector ? state.currentSector.id : null;
-    if(!sectorId) return false;
-    const updated = await removeReport(sectorId, reportId);
-    state.detailReports = updated;
-    state.latestReport[sectorId] = updated[0] || null;
-    renderReports(updated);
-    renderStatusBanner(updated[0] || null);
-    renderZoomMap(state.currentSector);
-    renderOverview();
-    updateMapColors();
-    return true;
+    if(!sectorId) return 'error';
+    try{
+      const updated = await removeReport(sectorId, reportId);
+      state.detailReports = updated;
+      state.latestReport[sectorId] = updated[0] || null;
+      renderReports(updated);
+      renderStatusBanner(updated[0] || null);
+      renderZoomMap(state.currentSector);
+      renderOverview();
+      updateMapColors();
+      return 'ok';
+    }catch(e){
+      return 'error';
+    }
   }
 
   function renderReports(reports){
@@ -1813,8 +1829,17 @@
         e.stopPropagation();
         delBtn.disabled = true;
         delBtn.textContent = 'eliminando…';
-        const ok = await deleteReportWithConfirm(r.id);
-        if(!ok){ delBtn.disabled = false; delBtn.textContent = 'eliminar reporte'; }
+        const result = await deleteReportWithConfirm(r.id);
+        // On success, renderReports() above has already rebuilt the whole
+        // feed (this exact button no longer exists) — only cancelled/error
+        // need to restore this button, since it's still the one on screen.
+        if(result === 'cancelled'){
+          delBtn.disabled = false;
+          delBtn.textContent = 'eliminar reporte';
+        }else if(result === 'error'){
+          delBtn.textContent = 'No se pudo eliminar — intenta de nuevo';
+          setTimeout(()=>{ delBtn.disabled = false; delBtn.textContent = 'eliminar reporte'; }, 3000);
+        }
       });
       feed.appendChild(card);
     });
@@ -1898,8 +1923,18 @@
     const btn = $('#statusDeleteBtn');
     btn.disabled = true;
     btn.textContent = 'eliminando…';
-    const ok = await deleteReportWithConfirm(currentBannerReport.id);
-    if(!ok){ btn.disabled = false; btn.textContent = 'eliminar reporte'; }
+    const result = await deleteReportWithConfirm(currentBannerReport.id);
+    // Unlike the report feed, #statusDeleteBtn is a single static element that
+    // renderStatusBanner() only shows/hides — it never gets rebuilt fresh the
+    // way a feed card does — so it has to be reset here explicitly even on
+    // success, or it stays stuck showing "eliminando…" forever.
+    if(result === 'error'){
+      btn.textContent = 'No se pudo eliminar — intenta de nuevo';
+      setTimeout(()=>{ btn.disabled = false; btn.textContent = 'eliminar reporte'; }, 3000);
+    }else{
+      btn.disabled = false;
+      btn.textContent = 'eliminar reporte';
+    }
   });
 
   $('#confirmSameBtn').addEventListener('click', async ()=>{
