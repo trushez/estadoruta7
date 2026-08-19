@@ -236,20 +236,30 @@
   .dot-red{background:var(--rust-500);}
 
   .status-banner{
-    border-radius:var(--radius-md);padding:18px 18px;display:flex;align-items:center;gap:14px;
-    border:1.5px solid var(--line-200);margin-bottom:18px;
+    border-radius:var(--radius-md);padding:18px 18px;display:flex;align-items:flex-start;gap:14px;
+    border:1.5px solid var(--line-200);margin-bottom:12px;cursor:pointer;text-align:left;width:100%;
   }
-  .status-banner .dot{width:15px;height:15px;border-radius:50%;flex-shrink:0;}
+  .status-banner:hover{border-color:var(--line-300);}
+  .status-banner:focus-visible{outline:2px solid var(--fjord-500);outline-offset:2px;}
+  .status-banner .dot{width:15px;height:15px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+  .status-banner-body{flex:1;min-width:0;}
+  .status-top-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;}
   .status-banner .label{font-family:'Barlow Condensed';font-size:23px;font-weight:600;}
-  .status-banner .since{font-size:13.5px;color:var(--mist-500);margin-top:3px;}
+  .status-km{font-family:'IBM Plex Mono';font-size:21px;font-weight:700;color:var(--mist-100);flex-shrink:0;}
+  .status-why{font-size:15px;line-height:1.5;color:var(--mist-100);margin-top:7px;}
+  .status-banner .since{font-size:13.5px;color:var(--mist-500);margin-top:7px;}
   .bg-bueno{background:rgba(92,138,68,0.13);}
   .bg-precaucion{background:rgba(156,97,16,0.13);}
   .bg-complicado{background:rgba(194,74,42,0.13);}
   .bg-cortado{background:rgba(143,54,32,0.16);}
   .bg-neutral{background:var(--ink-850);}
   .status-stale{font-size:13px;color:var(--signal-400);margin-top:8px;display:flex;align-items:center;gap:6px;}
-  .status-actions{display:flex;gap:10px;margin:-6px 0 18px;}
+  .status-tap-hint{font-size:12.5px;color:var(--fjord-500);font-weight:600;margin-top:10px;}
+  .status-actions{display:flex;gap:10px;margin:0 0 8px;}
   .status-actions .btn{flex:1;justify-content:center;font-size:15px;padding:13px 14px;}
+  .status-delete-row{display:flex;justify-content:flex-end;margin:0 0 18px;}
+  .status-delete-row button{font-size:13.5px;color:var(--mist-500);background:none;border:none;padding:8px 2px;font-weight:600;}
+  .status-delete-row button.danger{color:var(--rust-300);}
 
   /* ---------- Buttons ---------- */
   .btn{
@@ -556,17 +566,25 @@
     <h2 class="display" id="detailName" style="font-size:30px;font-weight:700;"></h2>
     <div class="mono" id="detailKm" style="font-size:11px;color:var(--mist-500);margin:2px 0 14px;"></div>
 
-    <div class="status-banner bg-neutral" id="statusBanner">
+    <div class="status-banner bg-neutral" id="statusBanner" role="button" tabindex="0">
       <span class="dot dot-neutral" id="statusDot"></span>
-      <div>
-        <div class="label" id="statusLabel">Sin reportes recientes</div>
+      <div class="status-banner-body">
+        <div class="status-top-row">
+          <span class="label" id="statusLabel">Sin reportes recientes</span>
+          <span class="status-km hidden" id="statusKm"></span>
+        </div>
+        <div class="status-why hidden" id="statusWhy"></div>
         <div class="since" id="statusSince">Sé el primero en reportar el estado de este tramo</div>
         <div class="status-stale hidden" id="statusStale">⏱ Este reporte tiene varias horas — confirma si sigue así</div>
+        <div class="status-tap-hint hidden" id="statusTapHint">Toca para ver el reporte completo →</div>
       </div>
     </div>
     <div class="status-actions hidden" id="statusActions">
       <button class="btn" id="confirmSameBtn">✓ Sigue así</button>
       <button class="btn" id="updateStatusBtn">Actualizar estado</button>
+    </div>
+    <div class="status-delete-row hidden" id="statusDeleteRow">
+      <button type="button" class="danger" id="statusDeleteBtn">eliminar reporte</button>
     </div>
 
     <div class="section-eyebrow" style="margin-top:16px;">Este tramo en detalle</div>
@@ -1651,19 +1669,33 @@
     }
   }
 
+  // Tracks whichever report the status banner is currently showing, so its
+  // click/keyboard handlers (wired once, outside this function) know what
+  // to open or delete without needing to re-derive it each time.
+  let currentBannerReport = null;
+
   function renderStatusBanner(report){
     const dot = $('#statusDot');
     const label = $('#statusLabel');
+    const km = $('#statusKm');
+    const why = $('#statusWhy');
     const since = $('#statusSince');
     const banner = $('#statusBanner');
     const stale = $('#statusStale');
+    const tapHint = $('#statusTapHint');
     const actions = $('#statusActions');
+    const deleteRow = $('#statusDeleteRow');
+    currentBannerReport = report;
     if(report){
       const info = STATUS[report.condition];
       banner.className = `status-banner bg-${info.cls}`;
       dot.className = `dot dot-${info.cls}`;
       label.textContent = info.label;
-      since.textContent = `Último reporte KM ${report.km ?? '—'} · ${relTime(report.ts)} · ${fmtDateTime(report.ts)}`;
+      km.textContent = `KM ${report.km ?? '—'}`;
+      km.classList.remove('hidden');
+      why.textContent = report.text || '';
+      why.classList.toggle('hidden', !report.text);
+      since.textContent = `${relTime(report.ts)} · ${fmtDateTime(report.ts)}`;
       const hoursOld = (Date.now() - new Date(report.ts).getTime()) / 3600000;
       if(hoursOld >= 6){
         stale.textContent = `⏱ Este reporte tiene ${Math.floor(hoursOld)} h — confirma si sigue así`;
@@ -1671,14 +1703,20 @@
       }else{
         stale.classList.add('hidden');
       }
+      tapHint.classList.remove('hidden');
       actions.classList.remove('hidden');
+      deleteRow.classList.remove('hidden');
     }else{
       banner.className = 'status-banner bg-neutral';
       dot.className = 'dot dot-neutral';
       label.textContent = 'Sin reportes recientes';
+      km.classList.add('hidden');
+      why.classList.add('hidden');
       since.textContent = 'Sé el primero en reportar el estado de este tramo';
       stale.classList.add('hidden');
+      tapHint.classList.add('hidden');
       actions.classList.add('hidden');
+      deleteRow.classList.add('hidden');
     }
   }
 
@@ -1721,6 +1759,26 @@
     }
   }
 
+  // Shared by the report feed's "eliminar reporte" link and the status
+  // banner's delete option — confirms, deletes, and re-renders everything
+  // that shows report data for the current sector. Returns true on success
+  // so callers can restore a disabled button's label if the user cancels
+  // the confirm dialog or the delete request itself fails.
+  async function deleteReportWithConfirm(reportId){
+    if(!confirm('¿Eliminar este reporte? Esta acción no se puede deshacer.')) return false;
+    const sectorId = state.currentSector ? state.currentSector.id : null;
+    if(!sectorId) return false;
+    const updated = await removeReport(sectorId, reportId);
+    state.detailReports = updated;
+    state.latestReport[sectorId] = updated[0] || null;
+    renderReports(updated);
+    renderStatusBanner(updated[0] || null);
+    renderZoomMap(state.currentSector);
+    renderOverview();
+    updateMapColors();
+    return true;
+  }
+
   function renderReports(reports){
     const feed = $('#reportsFeed');
     if(!reports.length){
@@ -1751,20 +1809,12 @@
       const img = card.querySelector('.report-photo img');
       if(img) img.addEventListener('click', ()=> openLightbox(r.photo));
       const delBtn = card.querySelector('[data-removereport]');
-      if(delBtn) delBtn.addEventListener('click', async ()=>{
-        if(!confirm('¿Eliminar este reporte? Esta acción no se puede deshacer.')) return;
+      if(delBtn) delBtn.addEventListener('click', async (e)=>{
+        e.stopPropagation();
         delBtn.disabled = true;
         delBtn.textContent = 'eliminando…';
-        const sectorId = state.currentSector ? state.currentSector.id : null;
-        if(!sectorId){ delBtn.disabled = false; delBtn.textContent = 'eliminar reporte'; return; }
-        const updated = await removeReport(sectorId, r.id);
-        state.detailReports = updated;
-        state.latestReport[sectorId] = updated[0] || null;
-        renderReports(updated);
-        renderStatusBanner(updated[0] || null);
-        renderZoomMap(state.currentSector);
-        renderOverview();
-        updateMapColors();
+        const ok = await deleteReportWithConfirm(r.id);
+        if(!ok){ delBtn.disabled = false; delBtn.textContent = 'eliminar reporte'; }
       });
       feed.appendChild(card);
     });
@@ -1831,6 +1881,25 @@
 
   $('#updateStatusBtn').addEventListener('click', ()=>{
     if(state.currentSector) openSheet(Math.round((state.currentSector.kmFrom + state.currentSector.kmTo)/2));
+  });
+
+  $('#statusBanner').addEventListener('click', ()=>{
+    if(currentBannerReport) openReportDetail(currentBannerReport);
+  });
+  $('#statusBanner').addEventListener('keydown', (e)=>{
+    if((e.key === 'Enter' || e.key === ' ') && currentBannerReport){
+      e.preventDefault();
+      openReportDetail(currentBannerReport);
+    }
+  });
+  $('#statusDeleteBtn').addEventListener('click', async (e)=>{
+    e.stopPropagation();
+    if(!currentBannerReport) return;
+    const btn = $('#statusDeleteBtn');
+    btn.disabled = true;
+    btn.textContent = 'eliminando…';
+    const ok = await deleteReportWithConfirm(currentBannerReport.id);
+    if(!ok){ btn.disabled = false; btn.textContent = 'eliminar reporte'; }
   });
 
   $('#confirmSameBtn').addEventListener('click', async ()=>{
