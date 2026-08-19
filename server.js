@@ -116,6 +116,22 @@ app.post('/api/reports/:sectorId', rateLimit('report'), (req, res) => {
   res.json(capped);
 });
 
+app.delete('/api/reports/:sectorId/:reportId', (req, res) => {
+  const id = safeSectorId(req.params.sectorId);
+  if (!id) return res.status(400).json({ error: 'invalid sector id' });
+  const file = path.join(REPORTS_DIR, id + '.json');
+  const list = readJson(file, []);
+  const toDelete = list.find(r => r.id === req.params.reportId);
+  const filtered = list.filter(r => r.id !== req.params.reportId);
+  writeJsonAtomic(file, filtered);
+  // Best-effort cleanup of the report's uploaded photo, if any.
+  if (toDelete && typeof toDelete.photo === 'string' && toDelete.photo.startsWith('/uploads/')) {
+    const photoPath = path.join(UPLOADS_DIR, path.basename(toDelete.photo));
+    fs.unlink(photoPath, () => {});
+  }
+  res.json(filtered);
+});
+
 // ---------- advisories ----------
 app.get('/api/advisories', (req, res) => {
   res.json(readJson(ADVISORIES_FILE, []));
