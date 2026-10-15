@@ -125,6 +125,12 @@ input:focus,select:focus{border-color:var(--accent)}
 @media (prefers-reduced-motion:no-preference){.btn,.toggle,.tabs button{transition:background .15s,color .15s}}
 
 .savebar .warn{color:var(--sun);font-weight:700}
+.pl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;width:100%}
+.plist{list-style:none;margin:0;padding:0}
+.plist li{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:12px 0;border-top:1px solid var(--line)}
+.pl-main{min-width:0;overflow-wrap:anywhere}
+.pl-main small{display:block;color:var(--muted);font-variant-numeric:tabular-nums}
+.pl-act{display:flex;gap:8px}
 </style>
 </head>
 <body>

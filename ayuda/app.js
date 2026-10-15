@@ -18,7 +18,8 @@ var ss={
 var S=null, loadErr=false;
 var pin=ss.get('fj-pin')||'';
 var admin=!!pin;
-var tab=ss.get('fj-tab')||'recibir';
+var tab=ss.get('fj-tab')||'porllegar';
+var pledged={},pledgeErr='',pledgeBusy=false,confirmCancel=null;
 var quien=ss.get('fj-quien')||'';
 var openPledge=null,pinOpen=false,pinErr='',editId=null,confirmDel=null;
 var inflight=0,lastErr='';
@@ -70,22 +71,32 @@ function itemRow(it,ctx){
   if(it.recibido>0&&st!=='ok')parts.push(it.recibido+' recibido'+(it.recibido>1?'s':''));
   if(it.comprometido>0)parts.push(it.comprometido+' en camino');
   var key=ctx+':'+it.id;
-  var out='<li class="item"><span class="name">'+h(it.nombre)+(it.nota?'<span class="note">'+h(it.nota)+'</span>':'')+'</span><span class="chip '+st+'">'+chip+'</span>'+
+  var sub=[ctx==='u'?CATNAME[it.cat]:'',it.nota].filter(Boolean).join(' · ');
+  var out='<li class="item"><span class="name">'+h(it.nombre)+(sub?'<span class="note">'+h(sub)+'</span>':'')+'</span><span class="chip '+st+'">'+chip+'</span>'+
     '<div class="bar" aria-hidden="true"><i class="r" style="width:'+rp+'%"></i><i class="c" style="width:'+cp+'%"></i></div>'+
-    '<div class="meta"><span>'+parts.join(' · ')+'</span>'+(f>0?'<button class="btn ghost small" data-act="pledge" data-key="'+h(key)+'" aria-expanded="'+(openPledge===key)+'">Yo lo llevo</button>':'')+'</div>';
-  if(openPledge===key)out+=pledgeBox(it);
+    '<div class="meta"><span>'+parts.join(' · ')+'</span>'+(f>0&&!pledged[key]?'<button class="btn ghost small" data-act="pledge" data-key="'+h(key)+'" aria-expanded="'+(openPledge===key)+'">Yo lo llevo</button>':'')+'</div>';
+  if(openPledge===key)out+=pledgeBox(it,key);
   return out+'</li>';
 }
-function pledgeBox(it){
+function pledgeBox(it,key){
   var s=S.settings,num=(s.whatsapp||'').replace(/\D/g,''),lugar=h(s.lugar||'la Oficina de Convivencia de la escuela'),hor=s.horario?' ('+h(s.horario)+')':'';
-  if(num){
-    var who=s.contacto?h(s.contacto):'quien coordina';
-    var txt=encodeURIComponent('Hola, voy a llevar '+it.nombre+' para Fernanda y Jose.');
-    return '<div class="pledge"><p>Gracias. Avísale a '+who+' para que lo anote y no llegue repetido:</p>'+
-      '<a class="btn" href="https://wa.me/'+num+'?text='+txt+'" target="_blank" rel="noopener">Avisar por WhatsApp</a>'+
-      '<p>Número: <span class="num">+'+h(num)+'</span></p><p>Después déjalo en '+lugar+hor+'.</p></div>';
+  var done=pledged[key];
+  if(done){
+    var out='<div class="pledge"><p><b>¡Gracias, '+h(done.nombre)+'!</b> Quedó anotado que llevas '+done.cantidad+' de '+h(it.nombre).toLowerCase()+'. Las voluntarias ya lo ven en su lista.</p><p>Déjalo en '+lugar+hor+' y di que es para Fernanda y Jose.</p>';
+    if(num)out+='<p>¿Dudas? Escribe a '+(s.contacto?h(s.contacto):'quien coordina')+': <span class="num">+'+h(num)+'</span></p><a class="btn ghost small" href="https://wa.me/'+num+'" target="_blank" rel="noopener">Abrir WhatsApp</a>';
+    return out+'</div>';
   }
-  return '<div class="pledge"><p>Gracias. Llévalo a '+lugar+hor+' y di que es para Fernanda y Jose. Las voluntarias lo anotan cuando llega y la lista se actualiza.</p></div>';
+  var f=faltan(it),opts='';
+  for(var i=1;i<=Math.min(f,20);i++)opts+='<option value="'+i+'">'+i+'</option>';
+  var id=key.replace(/[^a-z0-9]/gi,'-');
+  return '<form class="pledge" data-form="llevo" data-id="'+it.id+'" data-key="'+h(key)+'">'+
+    '<p>Anota tu nombre para que las voluntarias sepan que viene en camino y no llegue repetido.</p>'+
+    '<div class="pl-grid"><div><label for="pn-'+id+'">Tu nombre</label><input id="pn-'+id+'" name="nombre" type="text" required minlength="2" maxlength="60" autocomplete="name"></div>'+
+    (f>1?'<div><label for="pc-'+id+'">Cuántos llevas</label><select id="pc-'+id+'" name="cantidad">'+opts+'</select></div>':'<input type="hidden" name="cantidad" value="1">')+
+    '<div><label for="pt-'+id+'">Teléfono (opcional)</label><input id="pt-'+id+'" name="telefono" type="tel" autocomplete="tel" placeholder="+56 9 …"></div></div>'+
+    (pledgeErr?'<p class="err">'+h(pledgeErr)+'</p>':'')+
+    '<button class="btn" type="submit"'+(pledgeBusy?' disabled':'')+'>'+(pledgeBusy?'Enviando…':'Confirmar que lo llevo')+'</button>'+
+    '<p class="hint" style="margin:0">Se entrega en '+lugar+hor+'.</p></form>';
 }
 function publicHtml(){
   var s=S.settings,out='';
@@ -95,7 +106,7 @@ function publicHtml(){
     '<div class="fact"><h3>Tallas de Fernanda</h3><p>'+(s.tallaF?h(s.tallaF):'Por confirmar')+'</p></div>'+
     '<div class="fact"><h3>Tallas de Jose</h3><p>'+(s.tallaJ?h(s.tallaJ):'Por confirmar')+'</p></div>'+
     '<div class="fact"><h3>Qué se recibe</h3><p>Solo cosas, no dinero</p><small>Ropa en buen estado, aseo y alimentos no perecibles</small></div></div></header>';
-  var urg=S.items.filter(function(it){return it.urgente&&faltan(it)>0});
+  var urg=S.items.filter(function(it){return it.urgente&&(faltan(it)>0||pledged['u:'+it.id])});
   if(urg.length)out+='<section class="urgent-band" aria-labelledby="h-urg"><h2 id="h-urg">Lo más urgente <span class="sub">'+urg.length+' cosa'+(urg.length>1?'s':'')+'</span></h2><ul class="list">'+urg.map(function(it){return itemRow(it,'u')}).join('')+'</ul></section>';
   CATS.forEach(function(c){
     var its=S.items.filter(function(it){return it.cat===c.k&&status(it)!=='ok'});
@@ -121,7 +132,7 @@ function stepper(id,field,val,label){
 }
 function catOptions(sel){return CATS.map(function(c){return'<option value="'+c.k+'"'+(c.k===sel?' selected':'')+'>'+h(c.n)+'</option>'}).join('')}
 function tabRecibir(){
-  var out='<p class="hint">Cuando llegue algo, toca <b>+</b> en "Llegó". Si alguien avisa que va a traer algo, súmalo en "En camino". Al marcar que llegó, se descuenta uno de "en camino" si había. Todo se guarda solo.</p>'+
+  var out='<p class="hint">Cuando llegue algo, toca <b>+</b> en "Llegó". Si alguien avisa que va a traer algo, súmalo en "En camino". Si lo trae alguien que avisó por la página, márcalo en <b>Por llegar</b> en vez de aquí, para no contarlo dos veces. Todo se guarda solo.</p>'+
     '<div style="max-width:360px"><label for="quien">Tu nombre (queda en el registro)</label><input id="quien" type="text" value="'+h(quien)+'" autocomplete="off"></div>';
   CATS.forEach(function(c){
     var its=S.items.filter(function(it){return it.cat===c.k});
@@ -142,6 +153,23 @@ function tabRecibir(){
       out+='</div>';
     });
   });
+  return out;
+}
+function tabPorLlegar(){
+  var all=S.pledges||[],pend=all.filter(function(p){return p.estado==='pendiente'}).reverse();
+  var out='<p class="hint">Personas que avisaron por la página que van a traer algo. Cuando llegue, toca <b>Llegó</b> y se suma a lo recibido.</p>';
+  if(!pend.length)out+='<p class="hint"><b>No hay nada pendiente.</b></p>';
+  else out+='<ul class="plist">'+pend.map(function(p){
+    var tel=p.telefono?'<span class="num">'+h(p.telefono)+'</span>':'';
+    var pi=byId(p.itemId);
+    return '<li><div class="pl-main"><b>'+h(p.item)+'</b> × '+p.cantidad+(pi?' <span class="note" style="display:inline">· '+h(CATNAME[pi.cat]||'')+'</span>':'')+'<small>'+h(p.nombre)+(tel?' · '+tel:'')+' · '+h(fmtDate(p.t,true))+'</small></div>'+
+      '<div class="pl-act"><button class="btn small" data-act="pdone" data-pid="'+p.pid+'">Llegó</button>'+
+      (confirmCancel===p.pid?'<button class="btn danger small" data-act="pcancelyes" data-pid="'+p.pid+'">Sí, no vendrá</button>':'<button class="btn ghost small" data-act="pcancel" data-pid="'+p.pid+'">No vendrá</button>')+'</div></li>';
+  }).join('')+'</ul>';
+  var closed=all.filter(function(p){return p.estado!=='pendiente'}).slice(-15).reverse();
+  if(closed.length)out+='<div class="cathead">Últimos cerrados</div><ul class="log">'+closed.map(function(p){
+    return '<li><time>'+h(fmtDate(p.cerrado||p.t,true))+'</time><b>'+h(p.item)+' × '+p.cantidad+'</b><span>'+h(p.nombre)+'</span><span>· '+(p.estado==='llegó'?'llegó':'no vino')+'</span></li>';
+  }).join('')+'</ul>';
   return out;
 }
 function tabAgregar(){
@@ -179,8 +207,9 @@ function tabRegistro(){
   }).join('')+'</ul>';
 }
 function adminHtml(){
-  var tabs=[['recibir','Recibir'],['agregar','Agregar'],['afiche','Afiche'],['ajustes','Ajustes'],['registro','Registro']];
-  var body={recibir:tabRecibir,agregar:tabAgregar,afiche:tabAfiche,ajustes:tabAjustes,registro:tabRegistro}[tab]||tabRecibir;
+  var pend=(S.pledges||[]).filter(function(p){return p.estado==='pendiente'});
+  var tabs=[['porllegar','Por llegar'+(pend.length?' ('+pend.length+')':'')],['recibir','Recibir'],['agregar','Agregar'],['afiche','Afiche'],['ajustes','Ajustes'],['registro','Registro']];
+  var body={porllegar:tabPorLlegar,recibir:tabRecibir,agregar:tabAgregar,afiche:tabAfiche,ajustes:tabAjustes,registro:tabRegistro}[tab]||tabRecibir;
   return '<div class="admin"><h2>Panel de voluntarias</h2><div class="tabs" role="tablist">'+tabs.map(function(t){return'<button role="tab" data-act="tab" data-t="'+t[0]+'" aria-selected="'+(tab===t[0])+'">'+t[1]+'</button>'}).join('')+'</div>'+body()+'</div>';
 }
 function statusBar(){
@@ -290,15 +319,18 @@ function downloadFlyer(){
 app.addEventListener('click',function(e){
   var b=e.target.closest('[data-act]');if(!b)return;
   var act=b.getAttribute('data-act'),id=b.getAttribute('data-id'),it=id&&S?byId(id):null;
-  if(act==='pledge'){var k=b.getAttribute('data-key');openPledge=openPledge===k?null:k;render();return}
+  if(act==='pledge'){var k=b.getAttribute('data-key');openPledge=openPledge===k?null:k;pledgeErr='';render();if(openPledge){var n=document.querySelector('[data-form=llevo] input[name=nombre]');if(n)n.focus()}return}
   if(act==='openpin'){pinOpen=true;pinErr='';render();return}
   if(act==='tab'){tab=b.getAttribute('data-t');editId=null;confirmDel=null;ss.set('fj-tab',tab);render();return}
   if(act==='step'&&it){
     var f=b.getAttribute('data-f'),d=+b.getAttribute('data-d');
     if(it[f]+d<0)return;
-    it[f]+=d;if(f==='recibido'&&d>0&&it.comprometido>0)it.comprometido--;
+    it[f]+=d;
     send({op:'step',id:id,field:f,d:d});return;
   }
+  if(act==='pdone'){send({op:'pledgeDone',pid:b.getAttribute('data-pid')});toast('Marcado como llegado.');return}
+  if(act==='pcancel'){confirmCancel=b.getAttribute('data-pid');render();return}
+  if(act==='pcancelyes'){confirmCancel=null;send({op:'pledgeCancel',pid:b.getAttribute('data-pid')});return}
   if(act==='urg'&&it){it.urgente=!it.urgente;send({op:'urg',id:id});return}
   if(act==='edit'){editId=editId===id?null:id;confirmDel=null;render();return}
   if(act==='editcancel'){editId=null;confirmDel=null;render();return}
@@ -340,6 +372,24 @@ app.addEventListener('submit',function(e){
       .catch(function(){pinErr='No se pudo conectar. Intenta de nuevo.';render()});
     return;
   }
+  if(kind==='llevo'){
+    if(pledgeBusy)return;
+    var key=f.getAttribute('data-key'),nom=String(fd.get('nombre')||'').trim();
+    if(nom.length<2){pledgeErr='Escribe tu nombre.';render();return}
+    pledgeBusy=true;pledgeErr='';render();
+    fetch('/api/ayuda/llevo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:f.getAttribute('data-id'),nombre:nom,cantidad:fd.get('cantidad'),telefono:fd.get('telefono')})})
+      .then(function(r){return r.json().then(function(j){return{status:r.status,j:j}})})
+      .then(function(x){
+        pledgeBusy=false;
+        if(x.j.ok){pledged[key]={nombre:nom,cantidad:x.j.cantidad};if(!admin)S=x.j.state;else load();render();return}
+        if(x.j.error==='cubierto'){pledgeErr='Alguien más ya avisó que lo trae. ¡Gracias igual! Revisa otra cosa de la lista.';if(x.j.state&&!admin)S=x.j.state}
+        else if(x.j.error==='rate')pledgeErr='Ya enviaste varios avisos. Espera un rato e intenta de nuevo.';
+        else pledgeErr='No se pudo enviar. Intenta de nuevo.';
+        render();
+      })
+      .catch(function(){pledgeBusy=false;pledgeErr='Sin conexión. Intenta de nuevo.';render()});
+    return;
+  }
   if(kind==='add'){
     var nombre=String(fd.get('nombre')||'').trim(),n=parseInt(fd.get('necesitado'),10);
     if(!nombre||!(n>0))return;
@@ -361,7 +411,7 @@ app.addEventListener('submit',function(e){
 render();
 load();
 setInterval(function(){
-  if(document.hidden||inflight||editId)return;
+  if(document.hidden||inflight||editId||openPledge)return;
   var a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))return;
   load();
 },30000);
