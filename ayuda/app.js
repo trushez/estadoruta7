@@ -89,8 +89,8 @@ function pledgeBox(it){
 }
 function publicHtml(){
   var s=S.settings,out='';
-  out+='<header><p class="kicker">Donaciones · Incendio</p><h1>Ayuda para <em>Fernanda</em> y <em>Jose</em></h1>'+
-    '<p class="lede">Fernanda y su hija Jose, de 5 años, perdieron su casa en un incendio y casi nada se salvó. Aquí está lo que todavía les falta, para que no lleguen cosas repetidas. La lista se actualiza cada vez que llega una donación.</p>'+
+  out+='<header><p class="kicker">Donaciones</p><h1>Ayuda para <em>Fernanda</em> y <em>Jose</em></h1>'+
+    '<p class="lede">Aquí está lo que todavía les falta, para que no lleguen cosas repetidas. La lista se actualiza cada vez que llega una donación.</p>'+
     '<div class="facts"><div class="fact"><h3>Dónde entregar</h3><p>'+h(s.lugar||'Oficina de Convivencia de la escuela')+'</p>'+(s.horario?'<small>'+h(s.horario)+'</small>':'')+'</div>'+
     '<div class="fact"><h3>Tallas de Fernanda</h3><p>'+(s.tallaF?h(s.tallaF):'Por confirmar')+'</p></div>'+
     '<div class="fact"><h3>Tallas de Jose</h3><p>'+(s.tallaJ?h(s.tallaJ):'Por confirmar')+'</p></div>'+
@@ -190,7 +190,7 @@ function statusBar(){
 
 function render(){
   if(!S){
-    app.innerHTML='<div class="wrap"><p class="kicker">Donaciones · Incendio</p><h1>Ayuda para <em>Fernanda</em> y <em>Jose</em></h1><p class="lede">'+(loadErr?'No se pudo cargar la lista. Revisa tu conexión y recarga la página.':'Cargando la lista…')+'</p></div>';
+    app.innerHTML='<div class="wrap"><p class="kicker">Donaciones</p><h1>Ayuda para <em>Fernanda</em> y <em>Jose</em></h1><p class="lede">'+(loadErr?'No se pudo cargar la lista. Revisa tu conexión y recarga la página.':'Cargando la lista…')+'</p></div>';
     return;
   }
   var y=window.scrollY;
@@ -210,7 +210,7 @@ function pendingByCat(){
   return groups;
 }
 function waText(){
-  var s=S.settings,lines=['*Ayuda para Fernanda y Jose*','Se les quemó la casa y todavía necesitan:',''];
+  var s=S.settings,lines=['*Ayuda para Fernanda y Jose*','Todavía necesitan:',''];
   var urg=S.items.filter(function(it){return it.urgente&&faltan(it)>0});
   if(urg.length){lines.push('🔴 *URGENTE*');urg.forEach(function(it){lines.push('• '+it.nombre+' (faltan '+faltan(it)+')')});lines.push('')}
   pendingByCat().forEach(function(x){
@@ -230,9 +230,9 @@ function drawFlyer(){
   var GREEN='#1f5e4f',SUN='#f2c230',INK='#1a2420',PAPER='#ffffff',MUTE='#56645d',RED='#b3261e',SOFT='#d8ebe4';
   var D='"Bricolage Grotesque", "Segoe UI", sans-serif',B='"Atkinson Hyperlegible", "Segoe UI", sans-serif';
   g.fillStyle=GREEN;g.fillRect(0,0,W,H);
-  g.fillStyle=SUN;g.font='700 30px '+B;g.fillText('DONACIONES · INCENDIO',64,92);
+  g.fillStyle=SUN;g.font='700 30px '+B;g.fillText('DONACIONES',64,92);
   g.fillStyle=PAPER;g.font='800 84px '+D;g.fillText('Ayudemos a',64,186);g.fillText('Fernanda y Jose',64,274);
-  g.font='400 32px '+B;g.fillStyle=SOFT;g.fillText('Perdieron su casa. Esto es lo que todavía les falta:',64,330);
+  g.font='400 32px '+B;g.fillStyle=SOFT;g.fillText('Esto es lo que todavía les falta:',64,330);
   var px=48,py=362,pw=W-96,ph=720,room=ph-72,gap=40;
   g.fillStyle=PAPER;roundRect(g,px,py,pw,ph,22);g.fill();
   var rows=[];
