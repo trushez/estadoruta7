@@ -4,3 +4,4 @@ data/advisories.json
 uploads/*
 !uploads/.gitkeep
 .env
+data/ayuda-donaciones.json

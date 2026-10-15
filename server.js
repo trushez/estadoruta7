@@ -164,6 +164,9 @@ app.delete('/api/advisories/:id', (req, res) => {
   res.json(filtered);
 });
 
+// Página de donaciones para Fernanda y Jose (/ayuda)
+require('./ayuda')(app);
+
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 app.listen(PORT, () => console.log(`Carretera Austral server listening on port ${PORT}`));
